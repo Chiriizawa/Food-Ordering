@@ -723,20 +723,18 @@ def update_payment():
         return jsonify({'error': 'No selected file'}), 400
 
     if not allowed_file(file.filename):
-        return jsonify({
-            'error': 'Invalid file type. Only JPG, JPEG, PNG, and GIF files are allowed.'
-        }), 400
+        return jsonify({'error': 'Invalid file type. Only JPG, JPEG, PNG, and GIF files are allowed.'}), 400
 
     try:
         db = connect_db()
         cursor = db.cursor()
         customer_id = session['user']
 
-        # Read and encode the file to base64
+        # Read and encode the file in Base64
         image_bytes = file.read()
         payment_base64 = base64.b64encode(image_bytes).decode('utf-8')
 
-        # Fetch the latest order for the current user
+        # Get the most recent order
         cursor.execute("""
             SELECT order_id FROM orders
             WHERE customer_id = %s
@@ -750,7 +748,7 @@ def update_payment():
 
         order_id = row[0]
 
-        # Update the payment screenshot
+        # Update order with payment screenshot
         cursor.execute("""
             UPDATE orders
             SET payment_ss = %s
@@ -758,7 +756,7 @@ def update_payment():
         """, (payment_base64, order_id))
         db.commit()
 
-        # Insert a new empty order (maybe to prep next transaction?)
+        # Create new empty order
         cursor.execute("""
             INSERT INTO orders (customer_id)
             VALUES (%s)
@@ -774,6 +772,8 @@ def update_payment():
     finally:
         cursor.close()
         db.close()
+
+
         
 @customer.route('/thankyou')
 def thankyou():

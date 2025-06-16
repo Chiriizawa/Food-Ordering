@@ -175,7 +175,7 @@ def categories():
                     cursor.execute("INSERT INTO categories (category_name) VALUES (%s)", (category_name,))
                     connection.commit()
                     session['success_category'] = "Category added successfully!"
-                    return redirect(url_for('admin.category'))
+                    return redirect(url_for('admin.categories'))
                 except mysql.connector.Error as err:
                     error_categories = f"Error: {err}"
 
@@ -505,7 +505,7 @@ def manage_orders():
                 customers_dict[customer_id] = {
                     'customer_id': customer_id,
                     'full_name': full_name,
-                    'email': '',     # You can fill this in if needed
+                    'email': '',     # Optional: you can fetch this too
                     'contact': '',
                     'address': ''
                 }
@@ -530,10 +530,10 @@ def manage_orders():
             orders_grouped[customer_id].append({
                 'order_id': order_id,
                 'ordered_at': ordered_at.strftime('%Y-%m-%d %H:%M'),
-                'total_amount': float(total_amount),
+                'total_amount': float(total_amount or 0.0),
                 'status': status,
-                'payment_ss': base64.b64encode(payment_ss).decode('utf-8') if payment_ss else None,
-                'cancellation_reason': cancel_reason,
+                'payment_ss': payment_ss if payment_ss else None,  # already base64
+                'cancellation_reason': cancel_reason or '',
                 'items': items
             })
 
@@ -554,6 +554,7 @@ def manage_orders():
     finally:
         cursor.close()
         db.close()
+
 
 @admin.route('/api/processing_order', methods=['POST'])
 def processing_order():
