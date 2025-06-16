@@ -60,3 +60,9 @@ CREATE TABLE feedback (
     FOREIGN KEY (item_id) REFERENCES items(item_id),
     FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
 );
+
+ALTER TABLE orders
+MODIFY COLUMN total_amount DECIMAL(10,2) NULL;
+
+ALTER TABLE orders
+MODIFY COLUMN payment_ss LONGTEXT NULL;
