@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Crave On</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/customer/base.css') }}" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<script src="https://cdn.tailwindcss.com"></script>
+    
+</head>
+<body>
+
+<!-- Header Section with Navbar and Welcome -->
+<div class="header-section">
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-craveon">
+    <div class="container-fluid d-flex align-items-center">
+      <a class="navbar-brand text-light me-auto ms-3 logo-container" href="{{ url_for('customer.index') }}">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="logo" width="100" height="100" class="me-2 logo">
+      </a>
+      <div class="navbar-collapse show justify-content-center text-center" id="navbarNav">
+        <ul class="navbar-nav mx-auto">
+          <li class="nav-item">
+              <a class="nav-link text-light mx-3 {% if request.endpoint == 'customer.index' %}active{% endif %}" href="{{ url_for('customer.index') }}">
+                  <i class="fas fa-home"></i> Home
+              </a>
+          </li>
+          <li class="nav-item">
+              <a class="nav-link text-light mx-3 {% if request.endpoint == 'customer.menu' %}active{% endif %}" href="{{ url_for('customer.menu') }}">
+                  <i class="fas fa-utensils"></i> Menu
+              </a>
+          </li>
+          <li class="nav-item">
+              <a class="nav-link text-light mx-3 {% if request.endpoint == 'customer.orders' %}active{% endif %}" href="{{ url_for('customer.orders') }}">
+                  <i class="fas fa-box"></i> Orders
+              </a>
+          </li>
+          <li class="nav-item">
+              <a class="nav-link mx-3 text-light {% if request.endpoint == 'customer.myorders' %}active{% endif %}" href="{{ url_for('customer.myorders') }}">
+                  <i class="fas fa-list"></i> My Orders
+              </a>
+          </li>
+      </ul>
+            
+      </div>
+      
+      {% if session.get('user') %}
+      <div class="d-flex align-items-center gap-3 position-relative">
+        
+        <!-- Profile Icon -->
+        <div class="position-relative">
+          <i class="fa-solid fa-user text-light" style="cursor:pointer; font-size: 24px;" onclick="toggleDropdown()"></i>
+          <div class="profile-dropdown" id="profileDropdown">
+            <a href="#">Account</a>
+            <a href="#" class="text-danger" data-bs-toggle="modal" data-bs-target="#logoutModal">Log Out</a>
+          </div>
+        </div>
+      </div>
+      {% else %}
+      <div class="d-flex gap-2">
+        <a class="btn btn-light mx-2" href="{{ url_for('customer.login') }}">Log In</a>
+        <a class="btn btn-outline-light mx-2" href="{{ url_for('customer.signup') }}">Sign Up</a>
+      </div>
+      {% endif %}
+    </div>
+  </nav>
+
+</div>  
+  {% block content %} {% endblock %}
+</div>
+
+<!-- Logout Confirmation Modal -->
+<div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="logoutModalLabel">Confirm Logout</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">Are you sure you want to log out?</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <a href="{{ url_for('customer.logout') }}" class="btn btn-danger">Log Out</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+  function toggleDropdown() {
+    const dropdown = document.getElementById('profileDropdown');
+    dropdown.classList.toggle('show');
+  }
+
+  function toggleNotificationsDropdown() {
+    const dropdown = document.getElementById('notificationsDropdown');
+    dropdown.classList.toggle('show');
+    if (dropdown.classList.contains('show')) {
+      fetchNotifications();
+    }
+  }
+
+  function fetchNotifications() {
+    fetch('/CraveOn/notifications/json')
+      .then(response => response.json())
+      .then(data => {
+        const list = document.getElementById('notifications-list');
+        const badge = document.getElementById('notification-badge');
+        list.innerHTML = '';
+
+        if (data.error || data.length === 0) {
+          list.innerHTML = '<div class="dropdown-item text-muted">No notifications found.</div>';
+          badge.style.display = 'none';
+          return;
+        }
+
+        let unreadCount = 0;
+
+        data.forEach(notif => {
+          const item = document.createElement('a');
+          item.className = `dropdown-item ${notif.is_read === 0 ? 'unread' : 'read'}`;
+          item.href = "#";
+          
+          const titleHtml = notif.is_read === 0 ? `<strong>${notif.title}</strong>` : notif.title;
+          const messageClass = notif.is_read === 0 ? 'fw-bold' : 'fw-normal';
+
+          item.innerHTML = `
+            ${titleHtml}<br>
+            <div class="${messageClass}">${notif.message}</div>
+            <small class="text-muted">${notif.created_at}</small>
+          `;
+          if (notif.is_read === 0) unreadCount++;
+          item.addEventListener('click', () => markAsRead(notif.id, item));
+          list.appendChild(item);
+        });
+
+        badge.style.display = unreadCount > 0 ? 'inline-block' : 'none';
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('notifications-list').innerHTML = '<div class="dropdown-item text-danger">Error loading notifications</div>';
+      });
+  }
+
+  function markAsRead(id, item) {
+    fetch(`/CraveOn/notifications/mark_read/${id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => {
+      if (response.ok) {
+        const title = item.querySelector('strong');
+        if (title) {
+          title.outerHTML = title.innerHTML;
+        }
+        item.classList.remove('unread');
+        item.classList.add('read');
+        fetchNotifications();
+      } else {
+        console.error('Failed to mark as read');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+    });
+  }
+
+  function markAllAsRead() {
+    fetch('/CraveOn/notifications/mark_all_read', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => {
+      if (response.ok) {
+        fetchNotifications();
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+    });
+  }
+
+  document.addEventListener('click', function (event) {
+    if (!event.target.closest('.fa-bell')) {
+      document.getElementById('notificationsDropdown').classList.remove('show');
+    }
+    if (!event.target.closest('.fa-user')) {
+      document.getElementById('profileDropdown').classList.remove('show');
+    }
+  });
+
+  const themeButton = document.getElementById('theme-button')
+  const darkTheme = 'dark-theme'
+  const iconTheme = 'bx-sun'
+
+  // Previously selected topic (if user selected)
+  const selectedTheme = localStorage.getItem('selected-theme')
+  const selectedIcon = localStorage.getItem('selected-icon')
+
+  // We obtain the current theme that the interface has by validating the dark-theme class
+  const getCurrentTheme = () => document.body.classList.contains(darkTheme) ? 'dark' : 'light'
+  const getCurrentIcon = () => themeButton.classList.contains(iconTheme) ? 'bx-moon' : 'bx-sun'
+
+  // We validate if the user previously chose a topic
+  if (selectedTheme) {
+    // If the validation is fulfilled, we ask what the issue was to know if we activated or deactivated the dark
+    document.body.classList[selectedTheme === 'dark' ? 'add' : 'remove'](darkTheme)
+    themeButton.classList[selectedIcon === 'bx-moon' ? 'add' : 'remove'](iconTheme)
+  }
+
+  // Activate / deactivate the theme manually with the button
+  themeButton.addEventListener('click', () => {
+      // Add or remove the dark / icon theme
+      document.body.classList.toggle(darkTheme)
+      themeButton.classList.toggle(iconTheme)
+      // We save the theme and the current icon that the user chose
+      localStorage.setItem('selected-theme', getCurrentTheme())
+      localStorage.setItem('selected-icon', getCurrentIcon())
+  })
+</script>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

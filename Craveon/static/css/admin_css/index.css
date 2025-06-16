@@ -1,0 +1,134 @@
+body {
+    display: flex;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    width: 100vw;
+   
+    background-size: cover;
+}
+
+/* Sidebar styling */
+.sidebar {
+    width: 250px;
+    min-height: 100vh;
+    background-color: #81A094;
+    box-shadow: 2px 0 5px hsla(0, 0%, 0%, 0.1);
+    position: fixed;
+}
+
+/* Style for all sidebar links except the logo */
+.sidebar a:not(.navbar-brand) {
+    color: #333;
+    text-decoration: none;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    letter-spacing: 1px;
+    word-spacing: 3px;
+}
+
+/* Add hover effect only to nav links, not the logo */
+.sidebar a:not(.navbar-brand):hover {
+    background-color: #e3ebec;
+    color: #000;
+    transform: translateX(5px);
+    box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Active link style */
+.sidebar .nav-link.active {
+    background-color: #4f8ece;
+    font-weight: bold;
+}
+
+/* Style for the logo */
+.sidebar .navbar-brand {
+    color: #333;
+    text-decoration: none;
+    font-size: 1.25rem;
+}
+
+/* Add spacing for the logo text */
+.sidebar .navbar-brand span {
+    letter-spacing: 2px;
+    word-spacing: 5px;
+}
+
+/* Main content styling with full height */
+.content {
+    margin-left: 250px;
+    padding: 20px;
+    width: calc(100% - 250px);
+    height: 100vh;
+    overflow-y: auto;
+}
+
+/* Dashboard Header */
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.dashboard-header h1 {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+/* Card Container */
+.card-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+/* Card Styles */
+.card {
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    text-align: center;
+    transition: transform 0.2s ease-in-out;
+}
+
+/* Pie Chart Container */
+.card canvas {
+    width: 100% !important;
+    height: 250px !important;
+    margin-top: 10px;
+}
+
+/* Card Header */
+.card h2 {
+    font-size: 20px;
+    margin-bottom: 10px;
+}
+
+/* Card Text */
+.card p {
+    font-size: 18px;
+    color: #555;
+}
+
+/* Icon Styles */
+.card i {
+    font-size: 40px;
+    margin-bottom: 10px;
+    color: #4CAF50;
+}
+
+/* Sales Card Icon */
+.card.sales i {
+    color: #ff9800;
+}
+
+/* Rates Card Icon */
+.card.rates i {
+    color: #03a9f4;
+}
+
+/* Customers Card Icon */
+.card.customers i {
+    color: #e91e63;
+}

@@ -1,0 +1,54 @@
+body {
+    display: flex;
+}
+
+.sidebar {
+    width: 250px;
+    min-height: 100vh;
+    background-color: #81A094;
+    box-shadow: 2px 0 5px hsla(0, 0%, 0%, 0.1);
+    position: fixed;
+}
+
+/* Style for all sidebar links except the logo */
+.sidebar a:not(.navbar-brand) {
+    color: #333;
+    text-decoration: none;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    letter-spacing: 1px; /* Slight spacing between letters */
+    word-spacing: 3px; /* Optional spacing between words */
+}
+
+/* Add hover effect only to nav links, not the logo */
+.sidebar a:not(.navbar-brand):hover {
+    background-color: #e3ebec;
+    color: #000;
+    transform: translateX(5px); /* Slight shift on hover */
+    box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.1); /* Optional shadow */
+}
+
+/* Active link style */
+.sidebar .nav-link.active {
+    background-color: #4f8ece;
+    font-weight: bold;
+}
+
+/* Style for the logo */
+.sidebar .navbar-brand {
+    color: #333;
+    text-decoration: none;
+    font-size: 1.25rem;
+}
+
+/* Add spacing for the logo text */
+.sidebar .navbar-brand span {
+    letter-spacing: 2px; /* Space between letters */
+    word-spacing: 5px; /* Space between words (optional) */
+}
+
+/* Main content styling */
+.content {
+    margin-left: 250px;
+    padding: 20px;
+    width: calc(100% - 250px);
+}

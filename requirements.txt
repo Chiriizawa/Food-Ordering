@@ -1,0 +1,5 @@
+pip install flask
+pip instal pymsql
+pip install Brcypt
+pip install flask_bcrypt
+pip install flask_mail

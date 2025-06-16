@@ -1,0 +1,311 @@
+{% extends "cbase.html" %}
+
+{% block head %}
+    <title>Crave On - My Orders</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/customer/myorder.css') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/menu.css') }}">
+{% endblock %}
+
+{% block content %}
+<body class="bg-[#898989]">
+    
+<div class="bg-[#898989] max-w-7xl mx-auto px-4 py-10">  
+    <h1 class="text-3xl font-bold text-center mb-8 text-white">My Orders</h1>
+
+    <div id="orders-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Orders will be injected here -->
+    </div>
+</div>
+
+<!-- Cancel Order Modal -->
+<div id="cancel-order-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+        <div class="p-6">
+            <h2 class="text-2xl font-bold text-center mb-4 text-gray-800">Cancel Order</h2>
+            
+            <div class="mb-6">
+                <h3 class="font-medium text-gray-700 mb-1">Reason for cancellation</h3>
+                <p class="text-sm text-gray-500 mb-3">Please explain why you're canceling this order</p>
+                <textarea id="cancellation-reason" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" placeholder="Enter your reason here..."></textarea>
+            </div>
+
+            <div class="border-t border-gray-200 pt-4">
+                <h3 class="font-medium text-gray-700 mb-2">Order Summary</h3>
+                <div id="order-summary" class="text-sm text-gray-600 mb-4">
+                    <!-- Order items will be injected here -->
+                </div>
+            </div>
+
+            <div class="flex flex-col space-y-3 mt-6">
+                <button id="submit-cancellation" class="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition duration-200">
+                    Confirm Cancellation
+                </button>
+                <button id="close-cancel-modal" class="w-full py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition duration-200">
+                    Go Back
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Order Modal -->
+<div id="delete-order-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+        <div class="p-6">
+            <h2 class="text-2xl font-bold text-center mb-4 text-gray-800">Delete Order</h2>
+            
+            <div class="mb-6 text-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <p class="text-gray-700 mt-3">Are you sure you want to permanently delete this order?</p>
+                <p class="text-sm text-gray-500 mt-2">This action cannot be undone.</p>
+            </div>
+
+            <div class="border-t border-gray-200 pt-4">
+                <h3 class="font-medium text-gray-700 mb-2">Order Summary</h3>
+                <div id="delete-order-summary" class="text-sm text-gray-600 mb-4">
+                    <!-- Order items will be injected here -->
+                </div>
+            </div>
+
+            <div class="flex flex-col space-y-3 mt-6">
+                <button id="confirm-delete-order" class="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition duration-200">
+                    Delete Order
+                </button>
+                <button id="close-delete-modal" class="w-full py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition duration-200">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        fetch('/CraveOn/api/myorders')
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('orders-container');
+
+                if (data.error) {
+                    container.innerHTML = `<p class="text-red-500 text-center p-4">${data.error}</p>`;
+                    return;
+                }
+
+                const orders = data.orders;
+
+                if (orders.length === 0) {
+                    container.innerHTML = '<p class="text-gray-500 text-center p-4">No orders found.</p>';
+                    return;
+                }
+
+                orders.forEach(order => {
+                    const orderCard = document.createElement('div');
+                    orderCard.className = 'bg-gray-400 shadow-md rounded-lg overflow-hidden flex flex-col h-full';
+
+                    let itemsHtml = '';
+                    let total = 0;
+
+                    order.items.forEach(item => {
+                        const subtotal = item.price * item.quantity;
+                        total += subtotal;
+
+                        itemsHtml += `
+                            <div class="flex gap-3 py-3 border-b border-gray-300">
+                                <div class="w-16 h-16 bg-gray-300 rounded-md overflow-hidden flex-shrink-0">
+                                    ${item.image ? 
+                                        `<img src="data:image/jpeg;base64,${item.image}" class="object-cover w-full h-full" alt="${item.name}">` : 
+                                        `<div class="w-full h-full flex items-center justify-center text-gray-500 text-sm">No Image</div>`
+                                    }
+                                </div>
+                                <div class="flex-grow">
+                                    <p class="font-medium text-gray-800 text-base">${item.name}</p>
+                                    <p class="text-sm text-gray-600">₱${item.price.toFixed(2)} × ${item.quantity}</p>
+                                    <p class="text-sm font-medium text-gray-700">Subtotal: ₱${subtotal.toFixed(2)}</p>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    const statusClasses = {
+                        'Pending': 'text-yellow-900',
+                        'Completed': 'text-green-900', 
+                        'Cancelled': 'text-red-500',
+                        'Approved': 'text-blue-900'
+                    };
+
+                    const statusText = order.status in statusClasses ? order.status : 'Unknown';
+                    const statusClass = statusClasses[order.status] || 'text-gray-500';
+
+                    orderCard.innerHTML = `
+                        <div class="p-4 flex-grow">
+                            <div class="flex justify-between items-start mb-3">
+                                <h2 class="text-lg font-bold text-green-900">Order #${order.order_id}</h2>
+                                <span class="text-sm font-semibold ${statusClass}">${statusText}</span>
+                            </div>
+                            
+                            <p class="text-sm text-black mb-3">${new Date(order.ordered_at).toLocaleString()}</p>
+                            
+                            <div class="mb-3">
+                                <h3 class="font-semibold text-yellow-900 text-base mb-2">Items</h3>
+                                <div class="divide-y divide-gray-300">
+                                    ${itemsHtml}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="border-t border-gray-300 p-4">
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="font-semibold text-gray-800 text-base">Total:</span>
+                                <span class="font-bold text-gray-900 text-base">₱${total.toFixed(2)}</span>
+                            </div>
+                            
+                            <div class="space-y-2">
+                                ${['Pending', 'Approved'].includes(order.status) ? 
+                                    `<button onclick="openCancelOrderModal(${order.order_id}, ${JSON.stringify(order.items).replace(/"/g, '&quot;')})" 
+                                        class="w-full py-2 bg-red-500 hover:bg-red-600 text-white rounded-md text-base transition duration-200">
+                                        Cancel Order
+                                    </button>` : 
+                                    ''
+                                }
+                                ${['Completed', 'Cancelled'].includes(order.status) ? 
+                                    `<button onclick="openDeleteOrderModal(${order.order_id}, ${JSON.stringify(order.items).replace(/"/g, '&quot;')})" 
+                                        class="w-full py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md text-base transition duration-200">
+                                        Delete Order
+                                    </button>` : 
+                                    ''
+                                }
+                            </div>
+                        </div>
+                    `;
+
+                    container.appendChild(orderCard);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching orders:', error);
+                document.getElementById('orders-container').innerHTML = 
+                    '<p class="text-red-500 text-center p-4">Failed to load orders. Please try again later.</p>';
+            });
+    });
+
+    function openCancelOrderModal(orderId, items) {
+        const modal = document.getElementById('cancel-order-modal');
+        const submitButton = document.getElementById('submit-cancellation');
+        const orderSummary = document.getElementById('order-summary');
+
+        // Populate order summary
+        let summaryHtml = '';
+        let total = 0;
+        
+        items.forEach(item => {
+            const subtotal = item.price * item.quantity;
+            total += subtotal;
+            summaryHtml += `
+                <div class="flex justify-between py-1.5">
+                    <span>${item.name} (${item.quantity}x)</span>
+                    <span>₱${subtotal.toFixed(2)}</span>
+                </div>
+            `;
+        });
+
+        summaryHtml += `
+            <div class="flex justify-between font-medium border-t border-gray-200 mt-2 pt-2">
+                <span>Total:</span>
+                <span>₱${total.toFixed(2)}</span>
+            </div>
+        `;
+
+        orderSummary.innerHTML = summaryHtml;
+
+        submitButton.onclick = function () {
+            const cancellationReason = document.getElementById('cancellation-reason').value.trim();
+
+            if (!cancellationReason) {
+                alert('Please provide a cancellation reason.');
+                return;
+            }
+
+            fetch('/CraveOn/api/cancel_order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    order_id: orderId, 
+                    cancellation_reason: cancellationReason 
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message || 'Order cancellation processed');
+                location.reload();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error cancelling order');
+            });
+
+            modal.classList.add('hidden');
+        };
+
+        modal.classList.remove('hidden');
+        document.getElementById('close-cancel-modal').onclick = () => modal.classList.add('hidden');
+    }
+
+    function openDeleteOrderModal(orderId, items) {
+        const modal = document.getElementById('delete-order-modal');
+        const deleteButton = document.getElementById('confirm-delete-order');
+        const orderSummary = document.getElementById('delete-order-summary');
+
+        // Populate order summary
+        let summaryHtml = '';
+        let total = 0;
+        
+        items.forEach(item => {
+            const subtotal = item.price * item.quantity;
+            total += subtotal;
+            summaryHtml += `
+                <div class="flex justify-between py-1.5">
+                    <span>${item.name} (${item.quantity}x)</span>
+                    <span>₱${subtotal.toFixed(2)}</span>
+                </div>
+            `;
+        });
+
+        summaryHtml += `
+            <div class="flex justify-between font-medium border-t border-gray-200 mt-2 pt-2">
+                <span>Total:</span>
+                <span>₱${total.toFixed(2)}</span>
+            </div>
+        `;
+
+        orderSummary.innerHTML = summaryHtml;
+
+        deleteButton.onclick = function () {
+            fetch('/CraveOn/api/delete_order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    order_id: orderId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message || 'Order deleted successfully');
+                location.reload();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error deleting order');
+            });
+
+            modal.classList.add('hidden');
+        };
+
+        modal.classList.remove('hidden');
+        document.getElementById('close-delete-modal').onclick = () => modal.classList.add('hidden');
+    }
+</script>
+</body>
+{% endblock %}

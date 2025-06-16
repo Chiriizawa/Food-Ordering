@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crave On - Sign Up</title>
+    <link rel="stylesheet" href="{{url_for('static', filename='css/customer/signup.css')}}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .error-message {
+            color: #f44336;
+            font-size: 0.9rem;
+            text-align: left;
+            margin-top: 2px;
+        }
+        option[disabled] {
+            color: #999;
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+    <!-- Left Panel - Form -->
+    <div class="form-panel">
+        <form method="POST" action="{{ url_for('customer.signup') }}" class="signup-form">
+            <h2>Sign Up</h2>
+
+            <!-- Name Row -->
+            <div class="form-row">
+                <div class="form-group">
+                    <div class="input-field">
+                        <i class="fas fa-user"></i>
+                        <input type="text" name="firstname" placeholder="First Name" value="{{ request.form.get('firstname', '') }}">
+                    </div>
+                    {% if errors.get('firstname') %}
+                        <div class="error-message">{{ errors['firstname'] }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <div class="input-field">
+                        <i class="fas fa-user"></i>
+                        <input type="text" name="middlename" placeholder="Middle Name" value="{{ request.form.get('middlename', '') }}">
+                    </div>
+                    {% if errors.get('middlename') %}
+                        <div class="error-message">{{ errors['middlename'] }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <div class="input-field">
+                        <i class="fas fa-user"></i>
+                        <input type="text" name="surname" placeholder="Surname" value="{{ request.form.get('surname', '') }}">
+                    </div>
+                    {% if errors.get('surname') %}
+                        <div class="error-message">{{ errors['surname'] }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Contact Row -->
+            <div class="form-row">
+                <div class="form-group">
+                    <div class="input-field">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" name="email" placeholder="Email" value="{{ request.form.get('email', '') }}">
+                    </div>
+                    {% if errors.get('email') %}
+                        <div class="error-message">{{ errors['email'] }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <div class="input-field">
+                        <i class="fas fa-phone"></i>
+                        <input type="text" name="contact" placeholder="09*********">
+                    </div>
+                    {% if errors.get('contact') %}
+                        <div class="error-message">{{ errors['contact'] }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Address Section -->
+            <div class="form-row">
+                <div class="form-group">
+                    <div class="input-field">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <select id="regionSelect" class="form-select">
+                            <option value="" disabled selected>Select Region</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="input-field">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <select id="provinceSelect" class="form-select">
+                            <option value="" disabled selected>Select Province</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <div class="input-field">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <select id="municipalitySelect" class="form-select">
+                            <option value="" disabled selected>Select Municipality</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="input-field">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <select id="barangaySelect" class="form-select">
+                            <option value="" disabled selected>Select Barangay</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hidden fields -->
+            <input type="hidden" name="region" id="regionInput">
+            <input type="hidden" name="province" id="provinceInput">
+            <input type="hidden" name="municipality" id="municipalityInput">
+            <input type="hidden" name="barangay" id="barangayInput">
+
+            <!-- Password Section -->
+            <div class="form-group">
+                <div class="input-field password-container">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" name="password" id="password" placeholder="Password">
+                    <i class="fas fa-eye-slash toggle-password" id="togglePassword"></i>
+                </div>
+                {% if errors.get('password') %}
+                    <div class="error-message">{{ errors['password'] }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <div class="input-field password-container">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" name="confirm-password" id="confirm-password" placeholder="Confirm Password">
+                    <i class="fas fa-eye-slash toggle-password" id="toggleConfirmPassword"></i>
+                </div>
+                {% if errors.get('confirm_password') %}
+                    <div class="error-message">{{ errors['confirm_password'] }}</div>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="signup-btn">Sign Up</button>
+
+            <p class="login-text">Already have an account? <a href="{{ url_for('customer.login') }}">Log In</a></p>
+        </form>
+    </div>
+
+    <!-- Right Panel -->
+    <div class="image-panel">
+        <div class="panel-content">
+            <img src="{{url_for('static', filename='images/logo.png')}}" class="bouncing-image" alt="Logo">
+            <h3>Welcome to Crave On</h3>
+            <p>Join our foodie community today</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    function setupPasswordToggle(passwordId, toggleId) {
+        const toggle = document.getElementById(toggleId);
+        const password = document.getElementById(passwordId);
+
+        toggle.addEventListener('click', function () {
+            const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+            password.setAttribute('type', type);
+            this.classList.toggle('fa-eye-slash');
+            this.classList.toggle('fa-eye');
+        });
+    }
+
+    setupPasswordToggle('password', 'togglePassword');
+    setupPasswordToggle('confirm-password', 'toggleConfirmPassword');
+
+    let regionsData;
+
+    fetch("{{ url_for('static', filename='data/cluster.json') }}")
+        .then(res => res.json())
+        .then(data => {
+            regionsData = data;
+            const regionSelect = document.getElementById("regionSelect");
+            regionSelect.innerHTML = `<option value="" disabled selected>Select Region</option>`;
+            for (const code in data) {
+                regionSelect.innerHTML += `<option value="${code}">${data[code].region_name}</option>`;
+            }
+        });
+
+    document.getElementById("regionSelect").addEventListener("change", () => {
+        const regionCode = document.getElementById("regionSelect").value;
+        const provinces = regionsData[regionCode]?.province_list || {};
+        const provinceSelect = document.getElementById("provinceSelect");
+        provinceSelect.innerHTML = `<option value="" disabled selected>Select Province</option>`;
+        for (const name in provinces) {
+            provinceSelect.innerHTML += `<option value="${name}">${name}</option>`;
+        }
+        document.getElementById("municipalitySelect").innerHTML = `<option value="" disabled selected>Select Municipality</option>`;
+        document.getElementById("barangaySelect").innerHTML = `<option value="" disabled selected>Select Barangay</option>`;
+    });
+
+    document.getElementById("provinceSelect").addEventListener("change", () => {
+        const region = document.getElementById("regionSelect").value;
+        const province = document.getElementById("provinceSelect").value;
+        const municipalities = regionsData[region]?.province_list[province]?.municipality_list || {};
+        const municipalitySelect = document.getElementById("municipalitySelect");
+        municipalitySelect.innerHTML = `<option value="" disabled selected>Select Municipality</option>`;
+        for (const name in municipalities) {
+            municipalitySelect.innerHTML += `<option value="${name}">${name}</option>`;
+        }
+        document.getElementById("barangaySelect").innerHTML = `<option value="" disabled selected>Select Barangay</option>`;
+    });
+
+    document.getElementById("municipalitySelect").addEventListener("change", () => {
+        const region = document.getElementById("regionSelect").value;
+        const province = document.getElementById("provinceSelect").value;
+        const municipality = document.getElementById("municipalitySelect").value;
+        const barangays = regionsData[region]?.province_list[province]?.municipality_list[municipality]?.barangay_list || [];
+        const barangaySelect = document.getElementById("barangaySelect");
+        barangaySelect.innerHTML = `<option value="" disabled selected>Select Barangay</option>`;
+        barangays.forEach(name => {
+            barangaySelect.innerHTML += `<option value="${name}">${name}</option>`;
+        });
+    });
+
+    document.querySelector("form").addEventListener("submit", () => {
+        document.getElementById("regionInput").value = document.getElementById("regionSelect").value;
+        document.getElementById("provinceInput").value = document.getElementById("provinceSelect").value;
+        document.getElementById("municipalityInput").value = document.getElementById("municipalitySelect").value;
+        document.getElementById("barangayInput").value = document.getElementById("barangaySelect").value;
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+body {
+    display: flex;
+    justify-content: end;
+    margin-right: 10em;
+    height: 100vh;
+    background-color: #527556;
+}

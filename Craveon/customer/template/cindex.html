@@ -1,0 +1,107 @@
+{% extends "cbase.html" %}
+
+{% block head %}
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dishes.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+<title>Crave On</title>
+{% endblock %}
+
+{% block content %}
+
+<!-- Welcome Section -->
+<section class="welcome-section">
+  <div class="welcome-container">
+    <div class="welcome-text">
+      <h1>Welcome to Crave On</h1>
+      <p class="tagline">Ang cravings for today ay mga labi mo, yakap mo at ang lambing</p>
+      <button class="btn-order">Order Menu</button>
+    </div>
+    <div class="welcome-image">
+      <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Delicious food from Crave On">
+    </div>
+  </div>
+</section>
+
+<!-- Popular Dishes Section -->
+<section class="popular-dishes">
+  <div class="container">
+    <h1 class="scroll-fade animate__animated animate__fadeIn">Popular Dishes</h1>
+    <div class="dish-grid">
+      {% for item in items %}
+      <div class="dish-card scroll-fade delay-{{ loop.index % 4 }} animate__animated animate__fadeInUp">
+        {% if item[3] %}
+        <img src="data:image/jpeg;base64,{{ item[3] }}" alt="{{ item[1] }}" class="dish-image">
+        {% else %}
+        <img src="#" alt="Default Image" class="dish-image">
+        {% endif %}
+        <div class="dish-info">
+          <h5 class="dish-name">{{ item[1] }}</h5>
+          <p class="dish-price">Price: <span>₱{{ item[2] }}</span></p>
+        </div>
+      </div>
+      {% else %}
+      <p class="text-white col-span-full">No items available.</p>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="footer-container">
+    <div class="scroll-fade animate__animated animate__fadeIn">
+      <h4 class="footer-brand">Crave On</h4>
+      <p>Cravings mo, Craving ko, Crave On</p>
+    </div>
+    
+    <div class="scroll-fade delay-1 animate__animated animate__fadeIn">
+      <h5 class="footer-heading">Our Categories</h5>
+      <div class="footer-links">
+        <a href="#" class="hover:text-orange-400 transition">Pork</a>
+        <a href="#" class="hover:text-orange-400 transition">Chicken</a>
+        <a href="#" class="hover:text-orange-400 transition">Vegetables</a>
+        <a href="#" class="hover:text-orange-400 transition">Fish</a>
+      </div>
+    </div>
+    
+    <div class="scroll-fade delay-2 animate__animated animate__fadeIn">   
+      <h5 class="footer-heading">Contact Us</h5>
+      <div class="footer-contact">
+        <p>📞 1123303012</p>
+        <p>🌐 CraveOn.com</p>
+        <p>✉️ @CraveOncom</p>
+        <p>📍 minsan sa kanto minsan sa tabi</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+// Enhanced scroll animation
+document.addEventListener('DOMContentLoaded', function() {
+  const fadeElements = document.querySelectorAll('.scroll-fade');
+  
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        // Remove animate.css classes after animation completes
+        setTimeout(() => {
+          entry.target.classList.remove('animate__animated', 'animate__fadeIn', 'animate__fadeInUp');
+        }, 1000);
+      }
+    });
+  }, {
+    threshold: 0.1,
+    rootMargin: '0px 0px -100px 0px'
+  });
+
+  fadeElements.forEach(element => {
+    observer.observe(element);
+  });
+});
+</script>
+
+{% endblock %}
