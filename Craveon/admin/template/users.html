@@ -13,9 +13,9 @@
     <h2 class="text-center mb-4">Manage Users</h2>
 
     {% if message %}
-        <div class="alert alert-info alert-dismissible fade show" role="alert">
-            {{ message }}
-        </div>
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+        {{ message }}
+    </div>
     {% endif %}
 
     <!-- Active Users Table -->
@@ -39,18 +39,69 @@
                     <td>{{ user.email }}</td>
                     <td>{{ user.contact }}</td>
                     <td>{{ user.address }}</td>
-                    <td>
-                        <span class="badge bg-{{ 'success' if user.status == 'Active' else 'secondary' }}">
-                            {{ user.status }}
-                        </span>
-                    </td>
+                    <td><span class="badge bg-success">{{ user.status }}</span></td>
                     <td>
                         <div class="d-flex gap-2">
+                            <!-- View Button -->
+                            <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#viewActiveUserModal{{ user.customer_id }}">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                            <!-- Archive Button -->
                             <form action="{{ url_for('admin.archive_user', user_id=user.customer_id) }}" method="post">
                                 <button class="btn btn-sm btn-danger" type="submit">
                                     <i class="fas fa-archive"></i> Archive
                                 </button>
                             </form>
+                        </div>
+
+                        <!-- View Modal for Active User -->
+                        <div class="modal fade" id="viewActiveUserModal{{ user.customer_id }}" tabindex="-1" aria-labelledby="viewActiveUserModalLabel{{ user.customer_id }}" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="viewActiveUserModalLabel{{ user.customer_id }}">User Details</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p><strong>Name:</strong> {{ user.full_name }}</p>
+                                        <p><strong>Email:</strong> {{ user.email }}</p>
+                                        <p><strong>Phone:</strong> {{ user.contact }}</p>
+                                        <p><strong>Address:</strong> {{ user.address }}</p>
+                                        <p><strong>Status:</strong> {{ user.status }}</p>
+
+                                        <hr>
+                                        <h6>Transaction History</h6>
+                                        {% set txns = transactions_by_user.get(user.customer_id, []) %}
+                                        {% if txns %}
+                                        <table class="table table-sm table-bordered">
+                                            <thead>
+                                                <tr>
+                                                    <th>Order ID</th>
+                                                    <th>Total</th>
+                                                    <th>Status</th>
+                                                    <th>Ordered At</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for txn in txns %}
+                                                <tr>
+                                                    <td>{{ txn.order_id }}</td>
+                                                    <td>₱{{ "%.2f"|format(txn.total_amount) }}</td>
+                                                    <td>{{ txn.status }}</td>
+                                                    <td>{{ txn.ordered_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                        {% else %}
+                                        <p class="text-muted">No transactions found.</p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </td>
                 </tr>
@@ -86,11 +137,68 @@
                     <td>{{ user.address }}</td>
                     <td><span class="badge bg-secondary">Archived</span></td>
                     <td>
-                        <form action="{{ url_for('admin.unarchive_user', user_id=user.customer_id) }}" method="post">
-                            <button class="btn btn-sm btn-success" type="submit">
-                                <i class="fas fa-undo"></i> Unarchive
+                        <div class="d-flex gap-2">
+                            <!-- View Button -->
+                            <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#viewArchivedUserModal{{ user.customer_id }}">
+                                <i class="fas fa-eye"></i> View
                             </button>
-                        </form>
+                            <!-- Unarchive Button -->
+                            <form action="{{ url_for('admin.unarchive_user', user_id=user.customer_id) }}" method="post">
+                                <button class="btn btn-sm btn-success" type="submit">
+                                    <i class="fas fa-undo"></i> Unarchive
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- View Modal for Archived User -->
+                        <div class="modal fade" id="viewArchivedUserModal{{ user.customer_id }}" tabindex="-1" aria-labelledby="viewArchivedUserModalLabel{{ user.customer_id }}" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="viewArchivedUserModalLabel{{ user.customer_id }}">User Details</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p><strong>Name:</strong> {{ user.full_name }}</p>
+                                        <p><strong>Email:</strong> {{ user.email }}</p>
+                                        <p><strong>Phone:</strong> {{ user.contact }}</p>
+                                        <p><strong>Address:</strong> {{ user.address }}</p>
+                                        <p><strong>Status:</strong> Archived</p>
+
+                                        <hr>
+                                        <h6>Transaction History</h6>
+                                        {% set txns = transactions_by_user.get(user.customer_id, []) %}
+                                        {% if txns %}
+                                        <table class="table table-sm table-bordered">
+                                            <thead>
+                                                <tr>
+                                                    <th>Order ID</th>
+                                                    <th>Total</th>
+                                                    <th>Status</th>
+                                                    <th>Ordered At</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for txn in txns %}
+                                                <tr>
+                                                    <td>{{ txn.order_id }}</td>
+                                                    <td>₱{{ "%.2f"|format(txn.total_amount) }}</td>
+                                                    <td>{{ txn.status }}</td>
+                                                    <td>{{ txn.ordered_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                        {% else %}
+                                        <p class="text-muted">No transactions found.</p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </td>
                 </tr>
                 {% else %}

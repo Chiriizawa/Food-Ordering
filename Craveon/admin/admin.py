@@ -86,7 +86,7 @@ def logout():
     response = make_header(response)
     return response
 
-# Show all users
+# Show all users with their completed transaction history
 @admin.route('/Manage-User', methods=['GET'])
 def users():
     if 'admin' not in session:
@@ -104,13 +104,49 @@ def users():
         cursor.execute("SELECT * FROM customers WHERE is_archived = TRUE")
         archived_users = cursor.fetchall()
 
+        # Fetch all completed transactions
+        cursor.execute("""
+            SELECT 
+                o.order_id,
+                o.customer_id,
+                o.total_amount,
+                o.status,
+                o.ordered_at
+            FROM orders o
+            WHERE o.status = 'Completed'
+            ORDER BY o.ordered_at DESC
+        """)
+        all_transactions = cursor.fetchall()
+
+        # Organize transactions by customer_id for easy lookup in template
+        transactions_by_user = {}
+        for txn in all_transactions:
+            uid = txn["customer_id"]
+            if uid not in transactions_by_user:
+                transactions_by_user[uid] = []
+            transactions_by_user[uid].append(txn)
+
         cursor.close()
         connection.close()
 
         message = session.pop('message', None)
-        return render_template("users.html", active_users=active_users, archived_users=archived_users, message=message)
+        return render_template(
+            "users.html",
+            active_users=active_users,
+            archived_users=archived_users,
+            transactions_by_user=transactions_by_user,
+            message=message
+        )
+
     except Exception as e:
-        return render_template("users.html", active_users=[], archived_users=[], message=f"Error fetching users: {str(e)}")
+        return render_template(
+            "users.html",
+            active_users=[],
+            archived_users=[],
+            transactions_by_user={},
+            message=f"Error fetching users: {str(e)}"
+        )
+
 
 
 
