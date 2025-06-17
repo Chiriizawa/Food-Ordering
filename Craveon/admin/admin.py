@@ -36,7 +36,7 @@ def b64encode_filter(data):
 
 @admin.route('/')
 def index():
-    if 'user' not in session:
+    if 'admin' not in session:
         return redirect(url_for('admin.login'))
     return render_template('index.html')
 
@@ -44,7 +44,7 @@ def index():
 
 @admin.route('/login', methods=['GET', 'POST'])
 def login():
-    if 'user' in session:
+    if 'admin' in session:
         return redirect(url_for('admin.index'))
 
     emailmsg = ''
@@ -66,7 +66,7 @@ def login():
                 cursor = connection.cursor()
                 cursor.execute("INSERT INTO admin (username, password) VALUES(%s, %s)", (email, password))
                 connection.commit()
-                session['user'] = email
+                session['admin'] = email
                 return redirect(url_for('admin.index'))
             except mysql.connector.Error as e:
                 msg = f"Adding data failed! Error: {str(e)}"
@@ -81,7 +81,7 @@ def login():
 
 @admin.route('/logout')
 def logout():
-    session.pop('user', None)
+    session.pop('admin', None)
     response = make_response(redirect(url_for('admin.login')))
     response = make_header(response)
     return response
@@ -89,7 +89,7 @@ def logout():
 # Show all users
 @admin.route('/Manage-User', methods=['GET'])
 def users():
-    if 'user' not in session:
+    if 'admin' not in session:
         return redirect(url_for('admin.login'))
 
     try:
@@ -147,7 +147,7 @@ def unarchive_user(user_id):
 
 @admin.route('/Manage-Categories', methods=['GET', 'POST'])
 def categories():
-    if 'user' not in session:
+    if 'admin' not in session:
         return redirect(url_for('admin.login'))
 
     connection = connect_db()
@@ -193,7 +193,7 @@ def categories():
 
 @admin.route('/edit-category', methods=['POST'])
 def edit_category():
-    if 'user' not in session:
+    if 'admin' not in session:
         return redirect(url_for('admin.login'))
 
     category_id = request.form.get('category_id')
@@ -250,7 +250,7 @@ def unarchive_category(category_id):
 
 @admin.route('/Manage-Item', methods=['GET', 'POST'])
 def manageitem():
-    if 'user' not in session:
+    if 'admin' not in session:
         return redirect(url_for('admin.login'))
 
     error_item = None
@@ -278,13 +278,12 @@ def manageitem():
                 error_item = "Item name is required."
                 valid = False
             elif not all(word.isalpha() for word in name.split()):
-                error_item = "Item name must contain only letters and spaces. No numbers or symbols."
+                error_item = "Item name must contain only letters and spaces."
                 valid = False
             elif len(name) < 4 or len(name) > 19:
-                error_item = "Item name must be between 4 and 19 characters long."
+                error_item = "Item name must be between 4 and 19 characters."
                 valid = False
             else:
-                # Check for duplicate item name (case-insensitive)
                 cursor.execute("SELECT COUNT(*) FROM items WHERE LOWER(item_name) = LOWER(%s)", (name,))
                 (count,) = cursor.fetchone()
                 if count > 0:
@@ -306,76 +305,113 @@ def manageitem():
                 error_image = "Image is required."
                 valid = False
             elif not allowed_file(image.filename):
-                error_image = "Invalid file format. Only images (JPG, JPEG, PNG, GIF) are allowed."
+                error_image = "Invalid image format. Only JPG, JPEG, PNG, GIF allowed."
                 valid = False
 
-            # If all is valid, insert into DB and redirect
             if valid:
                 image_data = image.read()
                 try:
-                    cursor.execute(
-                        "INSERT INTO items (item_name, price, image, category_id) VALUES (%s, %s, %s, %s)",
-                        (name, price, image_data, category_id)
-                    )
+                    cursor.execute("""
+                        INSERT INTO items (item_name, price, image, category_id, is_archived)
+                        VALUES (%s, %s, %s, %s, %s)
+                    """, (name, price, image_data, category_id, 0))
                     connection.commit()
                     flash("Item added successfully!", "success")
-                    return redirect(url_for('admin.manageitem'))  # PRG fix
+                    return redirect(url_for('admin.manageitem'))
                 except Exception as e:
                     error_item = f"Database error: {str(e)}"
 
-        # Always fetch items for display
+        # Get active items
         cursor.execute("""
             SELECT items.item_id, items.item_name, items.price, items.image, items.category_id, categories.category_name
             FROM items
             LEFT JOIN categories ON items.category_id = categories.category_id
+            WHERE items.is_archived = 0
         """)
-        items = cursor.fetchall()
+        active_items = cursor.fetchall()
 
-        processed_items = []
-        for item in items:
-            item_id, item_name, price, image_data, category_id, category_name = item
-            image_base64 = base64.b64encode(image_data).decode('utf-8') if image_data else None
-            processed_items.append((item_id, item_name, price, image_base64, category_id, category_name or "Uncategorized"))
+        # Get archived items
+        cursor.execute("""
+            SELECT items.item_id, items.item_name, items.price, items.image, items.category_id, categories.category_name
+            FROM items
+            LEFT JOIN categories ON items.category_id = categories.category_id
+            WHERE items.is_archived = 1
+        """)
+        archived_items = cursor.fetchall()
+
+        # Process both
+        def process_items(raw_items):
+            result = []
+            for item in raw_items:
+                item_id, item_name, price, image_data, category_id, category_name = item
+                image_base64 = base64.b64encode(image_data).decode('utf-8') if image_data else None
+                result.append((item_id, item_name, price, image_base64, category_id, category_name or "Uncategorized"))
+            return result
+
+        processed_active = process_items(active_items)
+        processed_archived = process_items(archived_items)
 
         cursor.close()
         connection.close()
 
     except Exception as e:
         error_item = f"Unexpected error: {str(e)}"
-        processed_items = []
+        processed_active = []
+        processed_archived = []
         categories = []
 
     return render_template(
         "mitems.html",
-        items=processed_items,
+        items=processed_active,
+        archived_items=processed_archived,
         categories=categories,
         error_item=error_item,
         error_price=error_price,
         error_image=error_image
     )
 
-@admin.route('/delete/<int:item_id>', methods=['GET'])
-def delete_item(item_id):
+
+@admin.route('/archive-item/<int:item_id>')
+def archive_item(item_id):
+    if 'admin' not in session:
+        return redirect(url_for('admin.login'))
+
+    connection = connect_db()
+    cursor = connection.cursor()
+    try:
+        cursor.execute("UPDATE items SET is_archived = TRUE WHERE item_id = %s", (item_id,))
+        connection.commit()
+        flash("Item archived successfully.", "success")
+    except Exception as e:
+        flash(f"Error archiving item: {str(e)}", "danger")
+    finally:
+        cursor.close()
+        connection.close()
+
+    return redirect(url_for('admin.manageitem'))
+
+
+@admin.route('/restore-item/<int:item_id>')
+def restore_item(item_id):
+    if 'admin' not in session:
+        return redirect(url_for('admin.login'))
+
     try:
         connection = connect_db()
         cursor = connection.cursor()
-        
-        # Ensure the item exists before attempting to delete it
-        cursor.execute("SELECT item_id FROM items WHERE item_id = %s", (item_id,))
-        item = cursor.fetchone()
-
-        if not item:
-            flash("Item not found.", "danger")
-            return redirect(url_for('admin.manageitem'))
-
-        cursor.execute("DELETE FROM items WHERE item_id = %s", (item_id,))
+        cursor.execute("UPDATE items SET is_archived = 0 WHERE item_id = %s", (item_id,))
         connection.commit()
+        flash("Item has been successfully restored.", "success")
+    except Exception as e:
+        print("Error restoring item:", e)
+        flash("Failed to restore item.", "danger")
+    finally:
         cursor.close()
         connection.close()
-        flash("Item deleted successfully!", "success")
-        return redirect(url_for('admin.manageitem'))
-    except Exception as e:
-        return f"Error deleting item: {str(e)}", 500
+
+    return redirect(url_for('admin.manageitem'))
+
+
 
 @admin.route('/edit-item/<int:item_id>', methods=['POST'])
 def edit_item(item_id):
@@ -476,7 +512,7 @@ def morders():
     
 @admin.route('/api/morders', methods=['GET'])
 def manage_orders():
-    if 'user' not in session:
+    if 'admin' not in session:
         return jsonify({'error': 'User not logged in'}), 401
 
     db = connect_db()
@@ -558,7 +594,7 @@ def manage_orders():
 
 @admin.route('/api/processing_order', methods=['POST'])
 def processing_order():
-    if 'user' not in session:
+    if 'admin' not in session:
         return jsonify({'error': 'User not logged in'}), 401
 
     db = connect_db()
@@ -592,7 +628,7 @@ def processing_order():
 
 @admin.route('/api/accept_order', methods=['POST'])
 def accept_order():
-    if 'user' not in session:
+    if 'admin' not in session:
         return jsonify({'error': 'User not logged in'}), 401
 
     db = connect_db()
@@ -625,7 +661,7 @@ def accept_order():
         
 @admin.route('/api/cancel_order', methods=['POST'])
 def cancel_order():
-    if 'user' not in session:
+    if 'admin' not in session:
         return jsonify({'error': 'User not logged in'}), 401
 
     db = connect_db()

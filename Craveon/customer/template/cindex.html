@@ -16,7 +16,9 @@
     <div class="welcome-text">
       <h1>Welcome to Crave On</h1>
       <p class="tagline">Ang cravings for today ay mga labi mo, yakap mo at ang lambing</p>
+      <a href="{{ url_for('customer.menu') }}">
       <button class="btn-order">Order Menu</button>
+    </a>
     </div>
     <div class="welcome-image">
       <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Delicious food from Crave On">

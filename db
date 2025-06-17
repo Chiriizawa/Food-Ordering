@@ -1,3 +1,5 @@
+
+
 CREATE TABLE customers (
 	customer_id INT AUTO_INCREMENT PRIMARY KEY,
 	full_name VARCHAR(100) NOT NULL,
@@ -26,16 +28,17 @@ CREATE TABLE items(
 	item_name VARCHAR(100) NOT NULL,
     price DECIMAL(10,2) NOT NULL,
 	image LONGBLOB NOT NULL,
-	category_id INT
+	category_id INT,
+    is_archived BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (category_id) REFERENCES categories(category_id)
 );
 
 CREATE TABLE orders(
 	order_id INT AUTO_INCREMENT PRIMARY KEY,
 	customer_id INT,
-    total_amount DECIMAL(10,2) NOT NULL,
+    total_amount DECIMAL(10,2) NULL,
 	status ENUM('Pending','Processing', 'Completed', 'Cancelled') DEFAULT 'Pending',
-	payment_ss LONGBLOB NOT NULL,
+	payment_ss LONGTEXT NULL,
 	cancellation_reason TEXT,
 	ordered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
@@ -49,20 +52,3 @@ CREATE TABLE order_items(
     FOREIGN KEY (order_id) REFERENCES orders(order_id),
 	FOREIGN KEY (item_id) REFERENCES items(item_id)
 );
-
-CREATE TABLE feedback (
-    feedback_id INT AUTO_INCREMENT PRIMARY KEY,
-    item_id INT NOT NULL,
-    customer_id INT NOT NULL,
-    rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5), 
-    comment TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (item_id) REFERENCES items(item_id),
-    FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
-);
-
-ALTER TABLE orders
-MODIFY COLUMN total_amount DECIMAL(10,2) NULL;
-
-ALTER TABLE orders
-MODIFY COLUMN payment_ss LONGTEXT NULL;

@@ -102,8 +102,20 @@ def login():
             conn.close()
 
             if user and bcrypt.check_password_hash(user['password'], password):
-                session.clear()
-                session.permanent = True  # ✅ Make session permanent
+                # ✅ Update status to 'Active'
+                try:
+                    conn = connect_db()
+                    cursor = conn.cursor()
+                    cursor.execute("UPDATE customers SET status = 'Active' WHERE customer_id = %s", (user['customer_id'],))
+                    conn.commit()
+                except Exception as e:
+                    print("Error updating login status:", e)
+                finally:
+                    cursor.close()
+                    conn.close()
+
+                session.pop('users', None)  # Clear any previous session
+                session.permanent = True
 
                 session["user"] = user['customer_id']
                 session["user_email"] = user['email']
@@ -124,6 +136,7 @@ def login():
         password_error=password_error
     ))
     return make_header(response)
+
 
 
 
@@ -150,7 +163,23 @@ def send_verification_email(email, code):
 
 @customer.route("/logout", methods=["GET"])
 def logout():
-    session.pop('user', None)
+    if 'user' in session:
+        user_id = session['user'] # adjust based on how you store session info
+
+        try:
+            conn = connect_db()
+            cursor = conn.cursor()
+            # Update status to Inactive
+            cursor.execute("UPDATE customers SET status = 'Inactive' WHERE customer_id = %s", (user_id,))
+            conn.commit()
+        except Exception as e:
+            print("Error updating status:", e)
+        finally:
+            cursor.close()
+            conn.close()
+
+        session.pop('user', None)
+
     response = make_response(redirect(url_for('customer.index')))
     response = make_header(response)
     return response

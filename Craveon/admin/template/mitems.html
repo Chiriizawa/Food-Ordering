@@ -105,29 +105,30 @@
                         Edit
                     </button>
 
-                    <!-- Delete Button -->
-                    <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal{{ item[0] }}">
-                        Delete
-                    </button>
+                    <!-- Archive Button -->
+<button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#archiveModal{{ item[0] }}">
+    Archive
+</button>
 
-                    <!-- Delete Modal -->
-                    <div class="modal fade" id="deleteModal{{ item[0] }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ item[0] }}" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title">Confirm Delete</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                </div>
-                                <div class="modal-body">
-                                    Are you sure you want to delete <strong>{{ item[1] }}</strong>?
-                                </div>
-                                <div class="modal-footer">
-                                    <a href="{{ url_for('admin.delete_item', item_id=item[0]) }}" class="btn btn-danger">Delete</a>
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+<!-- Archive Modal -->
+<div class="modal fade" id="archiveModal{{ item[0] }}" tabindex="-1" aria-labelledby="archiveModalLabel{{ item[0] }}" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Archive</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to archive <strong>{{ item[1] }}</strong>?
+            </div>
+            <div class="modal-footer">
+                <a href="{{ url_for('admin.archive_item', item_id=item[0]) }}" class="btn btn-danger">Archive</a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 
                     <!-- Edit Modal -->
                     <div class="modal fade" id="editModal{{ item[0] }}" tabindex="-1" aria-labelledby="editModalLabel{{ item[0] }}" aria-hidden="true">
@@ -201,6 +202,49 @@
             {% endfor %}
         </tbody>
     </table>
+
+    <!-- Archived Item List -->
+<div class="card p-4 shadow mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4>Archived Items</h4>
+        <input type="text" id="archivedItemSearch" class="form-control w-25" placeholder="Search archived items...">
+    </div>
+    <table class="table table-bordered table-striped">
+        <thead class="table-secondary">
+            <tr>
+                <th>Item Name</th>
+                <th>Price</th>
+                <th>Category</th>
+                <th>Image</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="archivedItemTableBody">
+            {% for item in archived_items %}
+            <tr>
+                <td>{{ item[1] }}</td>
+                <td>₱{{ item[2] }}</td>
+                <td>{{ item[5] }}</td>
+                <td>
+                    {% if item[3] %}
+                        <img src="data:image/jpeg;base64,{{ item[3] }}" width="50" height="50" alt="Item Image">
+                    {% else %}
+                        No Image
+                    {% endif %}
+                </td>
+                <td>
+                    <!-- Restore Button -->
+                    <a href="{{ url_for('admin.restore_item', item_id=item[0]) }}" class="btn btn-success btn-sm">
+    Restore
+</a>
+
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
 </div>
 
 <script>
