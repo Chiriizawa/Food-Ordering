@@ -1,4 +1,6 @@
+CREATE DATABASE craveon;
 
+USE craveon;
 
 CREATE TABLE customers (
 	customer_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -36,9 +38,9 @@ CREATE TABLE items(
 CREATE TABLE orders(
 	order_id INT AUTO_INCREMENT PRIMARY KEY,
 	customer_id INT,
-    total_amount DECIMAL(10,2) NULL,
+    total_amount DECIMAL(10,2) NOT NULL,
 	status ENUM('Pending','Processing', 'Completed', 'Cancelled') DEFAULT 'Pending',
-	payment_ss LONGTEXT NULL,
+	payment_ss LONGBLOB NOT NULL,
 	cancellation_reason TEXT,
 	ordered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
@@ -52,3 +54,16 @@ CREATE TABLE order_items(
     FOREIGN KEY (order_id) REFERENCES orders(order_id),
 	FOREIGN KEY (item_id) REFERENCES items(item_id)
 );
+
+CREATE TABLE transaction_history (
+    transaction_id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id INT NOT NULL,
+    customer_id INT NOT NULL,
+    total_amount DECIMAL(10,2) NOT NULL,
+    status ENUM('Pending','Processing', 'Completed', 'Cancelled') NOT NULL,
+    ordered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (order_id) REFERENCES orders(order_id),
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
+);
+

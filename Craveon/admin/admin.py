@@ -125,25 +125,28 @@ def logout():
     response = make_header(response)
     return response
 
-# Show all users with their completed transaction history
 @admin.route('/Manage-User', methods=['GET'])
 def users():
+        return render_template("users.html" )
+    
+@admin.route('/api/manage-users', methods=['GET'])
+def api_manage_users():
     if 'admin' not in session:
-        return redirect(url_for('admin.login'))
+        return jsonify({"error": "Unauthorized"}), 401
 
     try:
         connection = connect_db()
         cursor = connection.cursor(dictionary=True)
 
-        # Fetch non-archived users
+        # Active users
         cursor.execute("SELECT * FROM customers WHERE is_archived = FALSE")
         active_users = cursor.fetchall()
 
-        # Fetch archived users
+        # Archived users
         cursor.execute("SELECT * FROM customers WHERE is_archived = TRUE")
         archived_users = cursor.fetchall()
 
-        # Fetch all completed transactions
+        # Completed orders
         cursor.execute("""
             SELECT 
                 o.order_id,
@@ -157,34 +160,45 @@ def users():
         """)
         all_transactions = cursor.fetchall()
 
-        # Organize transactions by customer_id for easy lookup in template
+        # Items in orders
+        cursor.execute("""
+            SELECT 
+                oi.order_id,
+                i.item_name,
+                oi.quantity
+            FROM order_items oi
+            JOIN items i ON oi.item_id = i.item_id
+        """)
+        order_items = cursor.fetchall()
+
+        # Group items by order_id
+        items_by_order = {}
+        for item in order_items:
+            oid = item["order_id"]
+            items_by_order.setdefault(oid, []).append({
+                "item_name": item["item_name"],
+                "quantity": item["quantity"]
+            })
+
+        # Attach items to transactions, then group by customer_id
         transactions_by_user = {}
         for txn in all_transactions:
+            txn["items"] = items_by_order.get(txn["order_id"], [])
             uid = txn["customer_id"]
-            if uid not in transactions_by_user:
-                transactions_by_user[uid] = []
-            transactions_by_user[uid].append(txn)
+            transactions_by_user.setdefault(uid, []).append(txn)
 
         cursor.close()
         connection.close()
 
-        message = session.pop('message', None)
-        return render_template(
-            "users.html",
-            active_users=active_users,
-            archived_users=archived_users,
-            transactions_by_user=transactions_by_user,
-            message=message
-        )
+        return jsonify({
+            "active_users": active_users,
+            "archived_users": archived_users,
+            "transactions_by_user": transactions_by_user
+        })
 
     except Exception as e:
-        return render_template(
-            "users.html",
-            active_users=[],
-            archived_users=[],
-            transactions_by_user={},
-            message=f"Error fetching users: {str(e)}"
-        )
+        return jsonify({"error": f"Error fetching users: {str(e)}"}), 500
+
 
 # Archive user (set inactive)
 @admin.route('/archive-user/<int:user_id>', methods=['POST'])
