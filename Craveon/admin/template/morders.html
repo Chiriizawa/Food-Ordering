@@ -17,6 +17,10 @@
         .processing-btn:hover {
             background-color: #d97706;
         }
+        .disabled-btn {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
     </style>
 {% endblock %}
 
@@ -339,6 +343,53 @@ function showOrderModal(order) {
         noScreenshotSpan.classList.remove('hidden');
     }
 
+    // Update button states based on order status
+    const acceptBtn = document.getElementById('accept-order-button');
+    const processingBtn = document.getElementById('processing-order-button');
+    const cancelBtn = document.getElementById('cancel-order-button');
+
+    // Reset all buttons first
+    acceptBtn.classList.remove('disabled-btn');
+    processingBtn.classList.remove('disabled-btn');
+    cancelBtn.classList.remove('disabled-btn');
+    acceptBtn.disabled = false;
+    processingBtn.disabled = false;
+    cancelBtn.disabled = false;
+
+    switch(order.status) {
+        case 'Pending':
+            // All buttons enabled for pending orders
+            break;
+        case 'Processing':
+            // All buttons enabled for processing orders
+            break;
+        case 'Accepted':
+            // All buttons enabled for accepted orders
+            break;
+        case 'Cancelled':
+            // Disable accept and processing buttons for cancelled orders
+            acceptBtn.classList.add('disabled-btn');
+            processingBtn.classList.add('disabled-btn');
+            acceptBtn.disabled = true;
+            processingBtn.disabled = true;
+            break;
+        case 'Completed':
+            // Disable processing and cancel buttons for completed orders
+            processingBtn.classList.add('disabled-btn');
+            cancelBtn.classList.add('disabled-btn');
+            processingBtn.disabled = true;
+            cancelBtn.disabled = true;
+            break;
+        default:
+            // For any other status, disable all action buttons
+            acceptBtn.classList.add('disabled-btn');
+            processingBtn.classList.add('disabled-btn');
+            cancelBtn.classList.add('disabled-btn');
+            acceptBtn.disabled = true;
+            processingBtn.disabled = true;
+            cancelBtn.disabled = true;
+    }
+
     document.getElementById('order-details-modal').classList.remove('hidden');
 }
 
@@ -372,7 +423,7 @@ document.getElementById('orders-table-body').addEventListener('click', event => 
 
 // Accept order modal open/close and confirm
 document.getElementById('accept-order-button').addEventListener('click', () => {
-    if (!currentOrder) return;
+    if (!currentOrder || document.getElementById('accept-order-button').disabled) return;
     document.getElementById('accept-order-modal').classList.remove('hidden');
 });
 
@@ -402,7 +453,7 @@ document.getElementById('confirm-accept-button').addEventListener('click', () =>
 
 // Processing order modal open/close and confirm
 document.getElementById('processing-order-button').addEventListener('click', () => {
-    if (!currentOrder) return;
+    if (!currentOrder || document.getElementById('processing-order-button').disabled) return;
     document.getElementById('processing-order-modal').classList.remove('hidden');
 });
 
@@ -432,7 +483,7 @@ document.getElementById('confirm-processing-button').addEventListener('click', (
 
 // Cancel order modal open/close and confirm
 document.getElementById('cancel-order-button').addEventListener('click', () => {
-    if (!currentOrder) return;
+    if (!currentOrder || document.getElementById('cancel-order-button').disabled) return;
     document.getElementById('cancel-order-modal').classList.remove('hidden');
 });
 

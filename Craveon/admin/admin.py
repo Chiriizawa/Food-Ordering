@@ -38,8 +38,47 @@ def b64encode_filter(data):
 def index():
     if 'admin' not in session:
         return redirect(url_for('admin.login'))
-    return render_template('index.html')
 
+    db = connect_db()
+    cursor = db.cursor()
+
+    # Total customers
+    cursor.execute("SELECT COUNT(*) FROM customers")
+    total_customers = cursor.fetchone()[0]
+
+    # Total sales (completed only)
+    cursor.execute("SELECT SUM(total_amount) FROM orders WHERE status = 'Completed'")
+    result = cursor.fetchone()[0]
+    total_sales = result if result else 0
+
+    # Top-selling items this month: quantity & total revenue
+    cursor.execute("""
+        SELECT 
+            i.item_name, 
+            SUM(oi.quantity) AS total_quantity, 
+            SUM(oi.quantity * i.price) AS total_revenue
+        FROM order_items oi
+        JOIN items i ON oi.item_id = i.item_id
+        JOIN orders o ON oi.order_id = o.order_id
+        WHERE MONTH(o.ordered_at) = MONTH(CURRENT_DATE())
+          AND YEAR(o.ordered_at) = YEAR(CURRENT_DATE())
+          AND o.status = 'Completed'
+        GROUP BY i.item_name
+        ORDER BY total_quantity DESC
+        LIMIT 10
+    """)
+    popular_items = cursor.fetchall()
+
+    item_names = [item[0] for item in popular_items]
+    item_quantities = [item[1] for item in popular_items]
+    item_revenues = [float(item[2]) for item in popular_items]  # Ensure float for JSON
+
+    return render_template('index.html',
+                           total_customers=total_customers,
+                           total_sales=total_sales,
+                           item_names=item_names,
+                           item_sales=item_quantities,
+                           item_revenues=item_revenues)
 
 
 @admin.route('/login', methods=['GET', 'POST'])
@@ -146,9 +185,6 @@ def users():
             transactions_by_user={},
             message=f"Error fetching users: {str(e)}"
         )
-
-
-
 
 # Archive user (set inactive)
 @admin.route('/archive-user/<int:user_id>', methods=['POST'])
