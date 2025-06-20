@@ -83,6 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
             activeUsers.forEach(user => {
                 const modalId = `userModal${user.customer_id}`;
                 const txnRows = getTransactionRows(user.customer_id, transactions);
+                const statusBadge = user.status === 'Active' ? 'bg-success' : 'bg-secondary';
 
                 activeBody.innerHTML += `
                     <tr>
@@ -90,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td>${user.email}</td>
                         <td>${user.contact}</td>
                         <td>${user.address}</td>
-                        <td><span class="badge bg-success">${user.status}</span></td>
+                        <td><span class="badge ${statusBadge}">${user.status}</span></td>
                         <td>
                             <div class="d-flex gap-2">
                                 <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#${modalId}">
@@ -166,7 +167,7 @@ function getTransactionRows(userId, transactions) {
 
     txns.forEach(txn => {
         const itemsList = txn.items?.map(item =>
-            `${item.item_name}`
+            `<li>${item.item_name}</li>`
         ).join('') || '';
 
         const totalQty = txn.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;

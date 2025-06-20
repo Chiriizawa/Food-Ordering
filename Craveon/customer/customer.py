@@ -934,3 +934,72 @@ def cancel_order():
     finally:
         cursor.close()
         db.close()
+        
+@customer.route('/Account')
+def account():
+    if 'user' not in session:
+        return redirect(url_for('customer.login'))
+
+    customer_id = session['user']
+    conn = connect_db()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM customers WHERE customer_id = %s", (customer_id,))
+    customer = cursor.fetchone()
+    cursor.close()
+    conn.close()
+
+    return render_template('account.html', customer=customer)
+
+@customer.route('/Account/Update', methods=['POST'])
+def update_account():
+    if 'user' not in session:
+        return redirect(url_for('customer.login'))
+
+    customer_id = session['user']
+    full_name = request.form.get('full_name', '').strip()
+    email = request.form.get('email', '').strip()
+    contact = request.form.get('contact', '').strip()
+    address = request.form.get('address', '').strip()
+
+    errors = {}
+
+    if not full_name:
+        errors['full_name'] = "Full name is required."
+
+    email_pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
+    if not email:
+        errors['email'] = "Email is required."
+    elif not re.match(email_pattern, email):
+        errors['email'] = "Invalid email format."
+
+    if not contact:
+        errors['contact'] = "Contact is required."
+    elif not contact.isdigit() or len(contact) != 11:
+        errors['contact'] = "Contact must be an 11-digit number."
+
+    if not address:
+        errors['address'] = "Address is required."
+
+    if errors:
+        conn = connect_db()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM customers WHERE customer_id = %s", (customer_id,))
+        customer = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+        return render_template("account.html", customer=customer, form_errors=errors, form_data=request.form, show_modal=True)
+
+    conn = connect_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE customers
+        SET full_name = %s, email = %s, contact = %s, address = %s
+        WHERE customer_id = %s
+    """, (full_name, email, contact, address, customer_id))
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    flash("Account details updated successfully.", "success")
+    return redirect(url_for('customer.account'))

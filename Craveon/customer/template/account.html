@@ -1,0 +1,94 @@
+{% extends "cbase.html" %}
+
+{% block head %}
+    <title>My Account</title>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto mt-10 p-6 bg-white shadow-lg rounded-lg">
+    <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">My Account</h2>
+    
+    <div class="space-y-4 text-gray-700">
+        <div class="flex justify-between"><span class="font-semibold">Full Name:</span><span>{{ customer.full_name }}</span></div>
+        <div class="flex justify-between"><span class="font-semibold">Email:</span><span>{{ customer.email }}</span></div>
+        <div class="flex justify-between"><span class="font-semibold">Contact:</span><span>{{ customer.contact }}</span></div>
+        <div class="flex justify-between"><span class="font-semibold">Address:</span><span>{{ customer.address }}</span></div>
+    </div>
+
+    <div class="text-center mt-6">
+        <button onclick="document.getElementById('editModal').classList.remove('hidden')" 
+                class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+            Edit Account
+        </button>
+    </div>
+</div>
+
+<!-- ✅ Edit Modal -->
+<div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 {% if show_modal %}block{% else %}hidden{% endif %}">
+    <div class="bg-white w-full max-w-lg p-6 rounded-lg shadow-lg relative">
+        <h3 class="text-xl font-bold mb-4">Edit Account</h3>
+        <form method="POST" action="{{ url_for('customer.update_account') }}">
+            <!-- Full Name -->
+            <div class="mb-2">
+                <label class="block text-sm font-medium">Full Name</label>
+                <input type="text" name="full_name" value="{{ (form_data.full_name if form_data else customer.full_name) | default('') }}" 
+                       class="w-full border rounded p-2 {% if form_errors and form_errors.full_name %}border-red-500{% endif %}">
+                {% if form_errors and form_errors.full_name %}
+                    <p class="text-red-500 text-sm mt-1">{{ form_errors.full_name }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Email -->
+            <div class="mb-2">
+                <label class="block text-sm font-medium">Email</label>
+                <input type="email" name="email" value="{{ (form_data.email if form_data else customer.email) | default('') }}" 
+                       class="w-full border rounded p-2 {% if form_errors and form_errors.email %}border-red-500{% endif %}">
+                {% if form_errors and form_errors.email %}
+                    <p class="text-red-500 text-sm mt-1">{{ form_errors.email }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Contact -->
+            <div class="mb-2">
+                <label class="block text-sm font-medium">Contact</label>
+                <input type="text" name="contact" value="{{ (form_data.contact if form_data else customer.contact) | default('') }}" 
+                       class="w-full border rounded p-2 {% if form_errors and form_errors.contact %}border-red-500{% endif %}" >
+                {% if form_errors and form_errors.contact %}
+                    <p class="text-red-500 text-sm mt-1">{{ form_errors.contact }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Address -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium">Address</label>
+                <textarea name="address" class="w-full border rounded p-2 {% if form_errors and form_errors.address %}border-red-500{% endif %}" >{{ (form_data.address if form_data else customer.address) | default('') }}</textarea>
+                {% if form_errors and form_errors.address %}
+                    <p class="text-red-500 text-sm mt-1">{{ form_errors.address }}</p>
+                {% endif %}
+            </div>
+
+            <div class="flex justify-end">
+                <button type="button" onclick="document.getElementById('editModal').classList.add('hidden')" 
+                        class="mr-2 bg-gray-300 hover:bg-gray-400 text-black py-2 px-4 rounded">
+                    Cancel
+                </button>
+                <button type="submit" class="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+
+        <!-- Close Button -->
+        <button onclick="document.getElementById('editModal').classList.add('hidden')" 
+                class="absolute top-2 right-2 text-gray-500 hover:text-black text-2xl font-bold">
+            &times;
+        </button>
+    </div>
+</div>
+
+{% if show_modal %}
+<script>
+    document.getElementById("editModal").classList.remove("hidden");
+</script>
+{% endif %}
+{% endblock %}

@@ -55,7 +55,7 @@
         <div class="position-relative">
           <i class="fa-solid fa-user text-light" style="cursor:pointer; font-size: 24px;" onclick="toggleDropdown()"></i>
           <div class="profile-dropdown" id="profileDropdown">
-            <a href="#">Account</a>
+            <a href="{{url_for('customer.account')}}">Account</a>
             <a href="#" class="text-danger" data-bs-toggle="modal" data-bs-target="#logoutModal">Log Out</a>
           </div>
         </div>
