@@ -20,7 +20,7 @@ def make_header(response):
 
 db_config = {
     'host':'localhost',
-    'database':'craveon',
+    'database':'test_integ',
     'user':'root',
     'password':'haharaymund',
 }
@@ -58,7 +58,6 @@ def login():
     if session.get('user') and session.get('verified') is not True:
         return make_header(redirect(url_for("customer.verify")))
 
-    email_error = None
     password_error = None
     errors = {}
 
@@ -80,7 +79,7 @@ def login():
                 else:
                     conn = connect_db()
                     cursor = conn.cursor(dictionary=True)
-                    cursor.execute("SELECT * FROM customers WHERE email = %s", (email,))
+                    cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
                     existing_user = cursor.fetchone()
                     cursor.close()
                     conn.close()
@@ -96,7 +95,7 @@ def login():
         if not errors and not password_error:
             conn = connect_db()
             cursor = conn.cursor(dictionary=True)
-            cursor.execute("SELECT * FROM customers WHERE email = %s", (email,))
+            cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
             user = cursor.fetchone()
             cursor.close()
             conn.close()
@@ -106,7 +105,7 @@ def login():
                 try:
                     conn = connect_db()
                     cursor = conn.cursor()
-                    cursor.execute("UPDATE customers SET status = 'Active' WHERE customer_id = %s", (user['customer_id'],))
+                    cursor.execute("UPDATE users SET status = 'Active' WHERE user_id = %s", (user['user_id'],))
                     conn.commit()
                 except Exception as e:
                     print("Error updating login status:", e)
@@ -117,9 +116,9 @@ def login():
                 session.pop('users', None)  # Clear any previous session
                 session.permanent = True
 
-                session["user"] = user['customer_id']
+                session["user"] = user['user_id']
                 session["user_email"] = user['email']
-                session["temp_user_id"] = user['customer_id']
+                session["temp_user_id"] = user['user_id']
                 session["verification_code"] = str(random.randint(100000, 999999))
                 session["verified"] = False
 
@@ -170,7 +169,7 @@ def logout():
             conn = connect_db()
             cursor = conn.cursor()
             # Update status to Inactive
-            cursor.execute("UPDATE customers SET status = 'Inactive' WHERE customer_id = %s", (user_id,))
+            cursor.execute("UPDATE users SET status = 'Inactive' WHERE user_id = %s", (user_id,))
             conn.commit()
         except Exception as e:
             print("Error updating status:", e)
@@ -239,7 +238,7 @@ def forgot_password():
                 # Proceed to check if the email exists in the database
                 conn = connect_db()
                 cursor = conn.cursor(dictionary=True)
-                cursor.execute("SELECT * FROM customers WHERE email = %s", (email,))
+                cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
                 user = cursor.fetchone()
                 cursor.close()
                 conn.close()
@@ -248,7 +247,7 @@ def forgot_password():
                     email_error = "Email not found. Please check your email."
                 else:
                     # ✅ Save reset session data
-                    session["reset_user_id"] = user['customer_id']
+                    session["reset_user_id"] = user['user_id']
                     session["reset_email"] = email
                     session["reset_verification_code"] = str(random.randint(100000, 999999))
 
@@ -319,7 +318,7 @@ def reset_password():
             conn = connect_db()
             cursor = conn.cursor()
             cursor.execute(
-                "UPDATE customers SET password = %s WHERE customer_id = %s",
+                "UPDATE users SET password = %s WHERE user_id = %s",
                 (hashed_password, session["reset_user_id"])
             )
             conn.commit()
@@ -352,7 +351,7 @@ def signup():
         password = request.form.get('password', '').strip()
         confirm_password = request.form.get('confirm-password', '').strip()
 
-        # Name Validation
+        # Name validation
         if not firstname:
             errors['firstname'] = "First name is required."
         elif not firstname.isalpha():
@@ -362,12 +361,13 @@ def signup():
         elif ' ' in firstname:
             errors['firstname'] = "First name must not contain spaces."
 
-        if not middlename.isalpha():
-            errors['middlename'] = "Middle name must contain only letters."
-        elif len(middlename) < 3:
-            errors['middlename'] = "Middle name must be at least 3 characters."
-        elif ' ' in middlename:
-            errors['middlename'] = "Middle name must not contain spaces."
+        if middlename:
+            if not middlename.isalpha():
+                errors['middlename'] = "Middle name must contain only letters."
+            elif len(middlename) < 3:
+                errors['middlename'] = "Middle name must be at least 3 characters."
+            elif ' ' in middlename:
+                errors['middlename'] = "Middle name must not contain spaces."
 
         if not surname:
             errors['surname'] = "Surname is required."
@@ -378,8 +378,7 @@ def signup():
         elif ' ' in surname:
             errors['surname'] = "Surname must not contain spaces."
 
-
-        # Email Validation
+        # Email validation
         if not email:
             errors['email'] = "Email is required."
         else:
@@ -389,7 +388,7 @@ def signup():
             else:
                 conn = connect_db()
                 cursor = conn.cursor()
-                cursor.execute("SELECT * FROM customers WHERE email = %s", (email,))
+                cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
                 existing_email = cursor.fetchone()
                 cursor.close()
                 conn.close()
@@ -397,7 +396,7 @@ def signup():
                 if existing_email:
                     errors['email'] = "Email already registered. Please use a different one."
 
-        # Contact Validation
+        # Contact validation
         if not contact:
             errors['contact'] = "Contact number is required."
         elif not contact.isdigit():
@@ -407,7 +406,7 @@ def signup():
         else:
             conn = connect_db()
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM customers WHERE contact = %s", (contact,))
+            cursor.execute("SELECT * FROM users WHERE contact = %s", (contact,))
             existing_contact = cursor.fetchone()
             cursor.close()
             conn.close()
@@ -415,7 +414,7 @@ def signup():
             if existing_contact:
                 errors['contact'] = "Contact number already registered. Please use a different one."
 
-        # Password Validation
+        # Password validation
         if not password:
             errors['password'] = "Password is required."
         elif len(password) < 8:
@@ -426,35 +425,32 @@ def signup():
         elif password != confirm_password:
             errors['confirm_password'] = "Passwords do not match."
 
+        # If there are errors, return to the form
         if errors:
             return render_template("signup.html", errors=errors)
 
-        # Create full name
-        full_name = f"{firstname} {middlename} {surname}".strip()  # Strip middle name if empty
-        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-
-        # Get address values (region, province, municipality, barangay) from the form
+        # Get and build address string
         region = request.form.get('region', '')
         province = request.form.get('province', '')
         municipality = request.form.get('municipality', '')
         barangay = request.form.get('barangay', '')
+        full_address = f"{region}, {province}, {municipality}, {barangay}".strip(', ')
 
-        # Concatenate address values into one string
-        full_address = f"{region}, {province}, {municipality}, {barangay}".strip(", ")
+        # Hash password
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
+        # Insert into users table
         conn = connect_db()
         cursor = conn.cursor()
-
-        # Insert into 'customer' table (name, address, email, contact, password)
-        cursor.execute(
-            "INSERT INTO customers (full_name, email, contact, address, password) VALUES (%s, %s, %s, %s, %s)",
-            (full_name, email, contact, full_address, hashed_password)
-        )
+        cursor.execute("""
+            INSERT INTO users (
+                first_name, middle_name, last_name, email, contact, address, password
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (firstname, middlename, surname, email, contact, full_address, hashed_password))
         conn.commit()
         cursor.close()
         conn.close()
 
-        # After successful sign up, redirect to login page
         return redirect(url_for('customer.login'))
 
     return render_template("signup.html", errors={})
@@ -514,7 +510,7 @@ def buy_now():
         # Check if there's an active order for the customer (not completed yet)
         cursor.execute("""
             SELECT order_id FROM orders
-            WHERE customer_id = %s AND status != 'completed'
+            WHERE user_id = %s AND status != 'completed'
             ORDER BY ordered_at DESC LIMIT 1
         """, (customer_id,))
         order_row = cursor.fetchone()
@@ -524,7 +520,7 @@ def buy_now():
         else:
             # If no active order, create a new order
             cursor.execute("""
-                INSERT INTO orders (customer_id, total_amount, status)
+                INSERT INTO orders (user_id, total_amount, status)
                 VALUES (%s, %s, 'pending')
             """, (customer_id, total_amount))
             order_id = cursor.lastrowid
@@ -587,7 +583,7 @@ def checkout():
         # Check for an existing active order
         cursor.execute("""
             SELECT order_id FROM orders
-            WHERE customer_id = %s AND status != 'completed'
+            WHERE user_id = %s AND status != 'completed'
             ORDER BY ordered_at DESC LIMIT 1
         """, (customer_id,))
         order_row = cursor.fetchone()
@@ -598,7 +594,7 @@ def checkout():
             # Calculate total
             total_amount = sum(float(item['price']) * int(item['quantity']) for item in items)
             cursor.execute("""
-                INSERT INTO orders (customer_id, total_amount, status)
+                INSERT INTO orders (user_id, total_amount, status)
                 VALUES (%s, %s, 'pending')
             """, (customer_id, total_amount))
             order_id = cursor.lastrowid
@@ -663,11 +659,11 @@ def api_orders():
     try:
         customer_id = session['user']
 
-        # Get customer info
+        # Get customer info from updated `users` table
         cursor.execute("""
-            SELECT customer_id, full_name, email, contact, address
-            FROM customers
-            WHERE customer_id = %s
+            SELECT user_id, first_name, middle_name, last_name, email, contact, address
+            FROM users
+            WHERE user_id = %s
         """, (customer_id,))
         cust_row = cursor.fetchone()
 
@@ -676,17 +672,19 @@ def api_orders():
 
         customer = {
             'id': cust_row[0],
-            'name': cust_row[1],
-            'email': cust_row[2],
-            'contact': cust_row[3],
-            'address': cust_row[4]
+            'first_name': cust_row[1],
+            'middle_name': cust_row[2],
+            'last_name': cust_row[3],
+            'email': cust_row[4],
+            'contact': cust_row[5],
+            'address': cust_row[6]
         }
 
         # Get all orders for the customer
         cursor.execute("""
-            SELECT order_id, ordered_at
+            SELECT order_id, ordered_at, payment_ss
             FROM orders
-            WHERE customer_id = %s
+            WHERE user_id = %s
             ORDER BY ordered_at DESC
         """, (customer_id,))
         order_rows = cursor.fetchall()
@@ -695,7 +693,7 @@ def api_orders():
             return jsonify({'customer': customer, 'orders': []})
 
         orders = []
-        for order_id, ordered_at in order_rows:
+        for order_id, ordered_at, payment_ss in order_rows:
             # Get items for each order
             cursor.execute("""
                 SELECT i.item_name, i.price, i.image, oi.quantity
@@ -717,6 +715,7 @@ def api_orders():
             orders.append({
                 'order_id': order_id,
                 'ordered_at': ordered_at.strftime('%Y-%m-%d %H:%M'),
+                'payment_ss': payment_ss is not None,
                 'items': items
             })
 
@@ -766,7 +765,7 @@ def update_payment():
         # Get the most recent order
         cursor.execute("""
             SELECT order_id FROM orders
-            WHERE customer_id = %s
+            WHERE user_id = %s
             ORDER BY ordered_at DESC
             LIMIT 1
         """, (customer_id,))
@@ -787,7 +786,7 @@ def update_payment():
 
         # Create new empty order
         cursor.execute("""
-            INSERT INTO orders (customer_id)
+            INSERT INTO orders (user_id)
             VALUES (%s)
         """, (customer_id,))
         db.commit()
@@ -825,9 +824,9 @@ def my_orders():
 
         # Get customer info
         cursor.execute("""
-            SELECT customer_id, full_name, email, contact, address
-            FROM customers
-            WHERE customer_id = %s
+            SELECT user_id, full_name, email, contact, address
+            FROM users
+            WHERE user_id = %s
         """, (customer_id,))
         cust_row = cursor.fetchone()
 
@@ -846,7 +845,7 @@ def my_orders():
         cursor.execute("""
             SELECT order_id, ordered_at, total_amount, status
             FROM orders
-            WHERE customer_id = %s
+            WHERE user_id = %s
             ORDER BY ordered_at DESC
         """, (customer_id,))
         order_rows = cursor.fetchall()
@@ -919,7 +918,7 @@ def cancel_order():
 
         cursor.execute("""
             INSERT INTO notifications (customer_id, title, message)
-            SELECT customer_id, 'Your Order has been Cancelled', 'Your order has been successfully cancelled.'
+            SELECT user_id, 'Your Order has been Cancelled', 'Your order has been successfully cancelled.'
             FROM orders
             WHERE order_id = %s
         """, (order_id,))
@@ -943,7 +942,7 @@ def account():
     customer_id = session['user']
     conn = connect_db()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM customers WHERE customer_id = %s", (customer_id,))
+    cursor.execute("SELECT * FROM users WHERE user_id = %s", (customer_id,))
     customer = cursor.fetchone()
     cursor.close()
     conn.close()
@@ -955,51 +954,121 @@ def update_account():
     if 'user' not in session:
         return redirect(url_for('customer.login'))
 
-    customer_id = session['user']
-    full_name = request.form.get('full_name', '').strip()
+    user_id = session['user']
+    first_name = request.form.get('first_name', '').strip()
+    middle_name = request.form.get('middle_name', '').strip()
+    last_name = request.form.get('last_name', '').strip()
     email = request.form.get('email', '').strip()
     contact = request.form.get('contact', '').strip()
     address = request.form.get('address', '').strip()
 
     errors = {}
 
-    if not full_name:
-        errors['full_name'] = "Full name is required."
+    # Name validation
+    if not first_name:
+        errors['first_name'] = "First name is required."
+    elif not first_name.isalpha():
+        errors['first_name'] = "First name must contain only letters."
 
+    if middle_name and not middle_name.isalpha():
+        errors['middle_name'] = "Middle name must contain only letters."
+
+    if not last_name:
+        errors['last_name'] = "Last name is required."
+    elif not last_name.isalpha():
+        errors['last_name'] = "Last name must contain only letters."
+
+    # Email validation
     email_pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
     if not email:
         errors['email'] = "Email is required."
     elif not re.match(email_pattern, email):
         errors['email'] = "Invalid email format."
 
+    # Contact validation
     if not contact:
         errors['contact'] = "Contact is required."
     elif not contact.isdigit() or len(contact) != 11:
         errors['contact'] = "Contact must be an 11-digit number."
 
+    # Address validation
     if not address:
         errors['address'] = "Address is required."
 
     if errors:
+        # Re-fetch user data for the form
         conn = connect_db()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM customers WHERE customer_id = %s", (customer_id,))
-        customer = cursor.fetchone()
+        cursor.execute("SELECT * FROM users WHERE user_id = %s", (user_id,))
+        user = cursor.fetchone()
         cursor.close()
         conn.close()
 
-        return render_template("account.html", customer=customer, form_errors=errors, form_data=request.form, show_modal=True)
+        return render_template("account.html", user=user, form_errors=errors, form_data=request.form, show_modal=True)
 
+    # Perform update
     conn = connect_db()
     cursor = conn.cursor()
     cursor.execute("""
-        UPDATE customers
-        SET full_name = %s, email = %s, contact = %s, address = %s
-        WHERE customer_id = %s
-    """, (full_name, email, contact, address, customer_id))
+        UPDATE users
+        SET first_name = %s,
+            middle_name = %s,
+            last_name = %s,
+            email = %s,
+            contact = %s,
+            address = %s
+        WHERE user_id = %s
+    """, (first_name, middle_name or None, last_name, email, contact, address, user_id))
     conn.commit()
     cursor.close()
     conn.close()
 
     flash("Account details updated successfully.", "success")
     return redirect(url_for('customer.account'))
+
+
+import imghdr
+from werkzeug.utils import secure_filename
+
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+def allowed_file(filename, file_data):
+    extension = filename.rsplit('.', 1)[-1].lower()
+    file_type = imghdr.what(None, h=file_data)
+    return (
+        '.' in filename and
+        extension in ALLOWED_EXTENSIONS and
+        file_type in ALLOWED_EXTENSIONS
+    )
+
+@customer.route('/upload_image', methods=['POST'])
+def upload_image():
+    if 'user' not in session:
+        flash('You must be logged in to upload an image.', 'error')
+        return redirect(url_for('customer.login'))
+
+    file = request.files.get('profile_image')
+    if not file or file.filename == '':
+        flash('No image uploaded.', 'error')
+        return redirect(url_for('customer.account'))
+
+    image_data = file.read()
+
+    if not allowed_file(file.filename, image_data):
+        flash('Invalid file type. Only image files (jpg, jpeg, png, gif) are allowed.', 'error')
+        return redirect(url_for('customer.account'))
+
+    try:
+        conn = connect_db()
+        cursor = conn.cursor()
+        cursor.execute("UPDATE users SET user_img = %s WHERE user_id = %s", (image_data, session['user']))
+        conn.commit()
+        flash('Profile image updated successfully!', 'success')
+    except Exception as e:
+        flash('Error uploading image: ' + str(e), 'error')
+    finally:
+        cursor.close()
+        conn.close()
+
+    return redirect(url_for('customer.account'))
+

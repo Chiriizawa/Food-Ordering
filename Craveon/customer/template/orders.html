@@ -59,192 +59,192 @@
 </section>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const ordersContainer = document.getElementById('orders-container');
-        const orderModal = document.getElementById('order-modal');
-        const cancelOrderButton = document.getElementById('cancel-order');
-        const confirmOrderButton = document.getElementById('confirm-order');
-        const orderNowButton = document.getElementById('order-now-button');
-        const uploadSection = document.getElementById('upload-section');
-        const errorMessage = document.getElementById('error-message');
-        const emptyOrderMessage = document.createElement('p');
+document.addEventListener('DOMContentLoaded', function () {
+    const ordersContainer = document.getElementById('orders-container');
+    const orderModal = document.getElementById('order-modal');
+    const cancelOrderButton = document.getElementById('cancel-order');
+    const confirmOrderButton = document.getElementById('confirm-order');
+    const orderNowButton = document.getElementById('order-now-button');
+    const uploadSection = document.getElementById('upload-section');
+    const errorMessage = document.getElementById('error-message');
+    const emptyOrderMessage = document.createElement('p');
 
-        emptyOrderMessage.classList.add('text-center', 'text-red-600', 'font-semibold');
-        emptyOrderMessage.textContent = 'No Item Found.';
+    emptyOrderMessage.classList.add('text-center', 'text-red-600', 'font-semibold');
+    emptyOrderMessage.textContent = 'No Item Found.';
 
-        // Fetch order data
-        fetch('/CraveOn/api/orders')
-            .then(response => response.json())
-            .then(data => {
-                if (data && data.customer) {
-                    const { customer, orders } = data;
+    fetch('/CraveOn/api/orders')
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.customer) {
+                const { customer, orders } = data;
 
-                    const customerCard = document.createElement('div');
-                    customerCard.classList.add('bg-gray-400', 'text-black', 'shadow-md', 'rounded-lg', 'mb-6', 'p-6', 'w-full', 'max-w-3xl');
-                    customerCard.innerHTML = `
-                        <h2 class="text-2xl font-semibold mb-4 text-green-900">Customer Information</h2>
-                        <p><strong>Name:</strong> ${customer.name}</p>
-                        <p><strong>Email:</strong> ${customer.email}</p>
-                        <p><strong>Contact:</strong> ${customer.contact}</p>
-                        <p><strong>Address:</strong> ${customer.address}</p>
-                    `;
-                    ordersContainer.appendChild(customerCard);
+                const fullName = `${customer.first_name}${customer.middle_name ? ' ' + customer.middle_name : ''} ${customer.last_name}`;
+                const customerCard = document.createElement('div');
+                customerCard.classList.add('bg-gray-400', 'text-black', 'shadow-md', 'rounded-lg', 'mb-6', 'p-6', 'w-full', 'max-w-3xl');
+                customerCard.innerHTML = `
+                    <h2 class="text-2xl font-semibold mb-4 text-green-900">Customer Information</h2>
+                    <p><strong>Name:</strong> ${fullName}</p>
+                    <p><strong>Email:</strong> ${customer.email}</p>
+                    <p><strong>Contact:</strong> ${customer.contact}</p>
+                    <p><strong>Address:</strong> ${customer.address}</p>
+                `;
+                ordersContainer.appendChild(customerCard);
 
-                    if (orders && orders.length > 0) {
-                        const latestOrder = orders[0];
-                        const orderCard = document.createElement('div');
-                        orderCard.classList.add('bg-gray-400', 'text-black', 'shadow-md', 'rounded-lg', 'p-4', 'w-full', 'max-w-3xl', 'mb-6', 'order-card');
+                if (orders && orders.length > 0) {
+                    const latestOrder = orders[0];
+                    const orderCard = document.createElement('div');
+                    orderCard.classList.add('bg-gray-400', 'text-black', 'shadow-md', 'rounded-lg', 'p-4', 'w-full', 'max-w-3xl', 'mb-6', 'order-card');
 
-                        let itemsHtml = '';
-                        let total = 0;
+                    let itemsHtml = '';
+                    let total = 0;
 
-                        latestOrder.items.forEach((item, index) => {
-                            const subtotal = item.price * item.quantity;
-                            total += subtotal;
+                    latestOrder.items.forEach((item, index) => {
+                        const subtotal = item.price * item.quantity;
+                        total += subtotal;
 
-                            itemsHtml += `
-                                <div class="flex items-center space-x-4 mb-4 item-row" data-index="${index}">
-                                    <div class="w-32">
-                                        ${item.image ?
-                                            `<img src="data:image/jpeg;base64,${item.image}" class="w-full h-24 object-cover rounded-md" alt="${item.name}">` :
-                                            `<img src="/static/default-image.jpg" class="w-full h-24 object-cover rounded-md" alt="No Image">`
-                                        }
-                                    </div>
-                                    <div class="text-sm flex-1">
-                                        <p><strong>Item:</strong> ${item.name}</p>
-                                        <p><strong>Price:</strong> ₱<span class="price">${item.price}</span></p>
-                                        <div class="flex items-center mt-1">
-                                            <strong>Quantity:</strong>
-                                            <button class="decrease-qty bg-gray-300 text-black px-2 mx-2 rounded">-</button>
-                                            <span class="quantity">${item.quantity}</span>
-                                            <button class="increase-qty bg-gray-300 text-black px-2 mx-2 rounded">+</button>
-                                        </div>
+                        itemsHtml += `
+                            <div class="flex items-center space-x-4 mb-4 item-row" data-index="${index}">
+                                <div class="w-32">
+                                    ${item.image ?
+                                        `<img src="data:image/jpeg;base64,${item.image}" class="w-full h-24 object-cover rounded-md" alt="${item.name}">` :
+                                        `<img src="/static/default-image.jpg" class="w-full h-24 object-cover rounded-md" alt="No Image">`
+                                    }
+                                </div>
+                                <div class="text-sm flex-1">
+                                    <p><strong>Item:</strong> ${item.name}</p>
+                                    <p><strong>Price:</strong> ₱<span class="price">${item.price}</span></p>
+                                    <div class="flex items-center mt-1">
+                                        <strong>Quantity:</strong>
+                                        <button class="decrease-qty bg-gray-300 text-black px-2 mx-2 rounded">-</button>
+                                        <span class="quantity">${item.quantity}</span>
+                                        <button class="increase-qty bg-gray-300 text-black px-2 mx-2 rounded">+</button>
                                     </div>
                                 </div>
-                            `;
-                        });
-
-                        orderCard.innerHTML = `
-                            <div id="items-list">
-                                ${itemsHtml}
-                            </div>
-                            <div class="mt-2 text-right border-t pt-2 flex justify-between">
-                                <h5 class="text-lg font-semibold">Total:</h5>
-                                <h5 class="text-lg font-semibold">₱<span id="order-total">${total.toFixed(2)}</span></h5>
                             </div>
                         `;
-                        ordersContainer.appendChild(orderCard);
+                    });
 
-                        if (latestOrder.payment_ss) {
-                            uploadSection.classList.add('hidden');
-                        }
+                    orderCard.innerHTML = `
+                        <div id="items-list">
+                            ${itemsHtml}
+                        </div>
+                        <div class="mt-2 text-right border-t pt-2 flex justify-between">
+                            <h5 class="text-lg font-semibold">Total:</h5>
+                            <h5 class="text-lg font-semibold">₱<span id="order-total">${total.toFixed(2)}</span></h5>
+                        </div>
+                    `;
+                    ordersContainer.appendChild(orderCard);
 
-                        if (latestOrder.items.length === 0) {
-                            orderNowButton.disabled = true;
-                            ordersContainer.appendChild(emptyOrderMessage);
-                        } else {
-                            orderNowButton.disabled = false;
-                        }
-
-                        const updateTotals = () => {
-                            const itemRows = orderCard.querySelectorAll('.item-row');
-                            let newTotal = 0;
-                            itemRows.forEach(row => {
-                                const price = parseFloat(row.querySelector('.price').textContent);
-                                const qty = parseInt(row.querySelector('.quantity').textContent);
-                                newTotal += price * qty;
-                            });
-                            document.getElementById('order-total').textContent = newTotal.toFixed(2);
-
-                            if (itemRows.length === 0) {
-                                orderNowButton.disabled = true;
-                                ordersContainer.appendChild(emptyOrderMessage);
-                            }
-                        };
-
-                        orderCard.querySelectorAll('.increase-qty').forEach(button => {
-                            button.addEventListener('click', () => {
-                                const qtyElem = button.parentElement.querySelector('.quantity');
-                                qtyElem.textContent = parseInt(qtyElem.textContent) + 1;
-                                updateTotals();
-                            });
-                        });
-
-                        orderCard.querySelectorAll('.decrease-qty').forEach(button => {
-                            button.addEventListener('click', () => {
-                                const qtyElem = button.parentElement.querySelector('.quantity');
-                                const currentQty = parseInt(qtyElem.textContent);
-                                if (currentQty > 1) {
-                                    qtyElem.textContent = currentQty - 1;
-                                    updateTotals();
-                                }
-                            });
-                        });
-
-                    } else {
-                        ordersContainer.innerHTML += '<p class="text-center text-gray-500">No orders found.</p>';
-                        orderNowButton.disabled = true;
+                    if (latestOrder.payment_ss) {
+                        uploadSection.classList.add('hidden');
                     }
 
+                    if (latestOrder.items.length === 0) {
+                        orderNowButton.disabled = true;
+                        ordersContainer.appendChild(emptyOrderMessage);
+                    } else {
+                        orderNowButton.disabled = false;
+                    }
+
+                    const updateTotals = () => {
+                        const itemRows = orderCard.querySelectorAll('.item-row');
+                        let newTotal = 0;
+                        itemRows.forEach(row => {
+                            const price = parseFloat(row.querySelector('.price').textContent);
+                            const qty = parseInt(row.querySelector('.quantity').textContent);
+                            newTotal += price * qty;
+                        });
+                        document.getElementById('order-total').textContent = newTotal.toFixed(2);
+
+                        if (itemRows.length === 0) {
+                            orderNowButton.disabled = true;
+                            ordersContainer.appendChild(emptyOrderMessage);
+                        }
+                    };
+
+                    orderCard.querySelectorAll('.increase-qty').forEach(button => {
+                        button.addEventListener('click', () => {
+                            const qtyElem = button.parentElement.querySelector('.quantity');
+                            qtyElem.textContent = parseInt(qtyElem.textContent) + 1;
+                            updateTotals();
+                        });
+                    });
+
+                    orderCard.querySelectorAll('.decrease-qty').forEach(button => {
+                        button.addEventListener('click', () => {
+                            const qtyElem = button.parentElement.querySelector('.quantity');
+                            const currentQty = parseInt(qtyElem.textContent);
+                            if (currentQty > 1) {
+                                qtyElem.textContent = currentQty - 1;
+                                updateTotals();
+                            }
+                        });
+                    });
+
                 } else {
-                    ordersContainer.innerHTML = '<p class="text-center text-gray-500">No customer or order data found.</p>';
+                    ordersContainer.innerHTML += '<p class="text-center text-gray-500">No orders found.</p>';
                     orderNowButton.disabled = true;
                 }
-            })
-            .catch(error => {
-                console.error('Error fetching order:', error);
-                ordersContainer.innerHTML = '<p class="text-center text-gray-500">Error loading order.</p>';
-            });
 
-        orderNowButton.addEventListener('click', function () {
-            orderModal.classList.remove('hidden');
+            } else {
+                ordersContainer.innerHTML = '<p class="text-center text-gray-500">No customer or order data found.</p>';
+                orderNowButton.disabled = true;
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching order:', error);
+            ordersContainer.innerHTML = '<p class="text-center text-gray-500">Error loading order.</p>';
         });
 
-        cancelOrderButton.addEventListener('click', function () {
-            orderModal.classList.add('hidden');
-        });
+    orderNowButton.addEventListener('click', function () {
+        orderModal.classList.remove('hidden');
+    });
 
-        confirmOrderButton.addEventListener('click', function () {
-            const fileInput = document.getElementById('payment-proof');
-            const file = fileInput.files[0];
+    cancelOrderButton.addEventListener('click', function () {
+        orderModal.classList.add('hidden');
+    });
 
-            if (!file) {
-                errorMessage.textContent = "Please select an image file first.";
-                errorMessage.classList.remove('hidden');
-                return;
+    confirmOrderButton.addEventListener('click', function () {
+        const fileInput = document.getElementById('payment-proof');
+        const file = fileInput.files[0];
+
+        if (!file) {
+            errorMessage.textContent = "Please select an image file first.";
+            errorMessage.classList.remove('hidden');
+            return;
+        }
+
+        const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif'];
+        const fileExtension = file.name.split('.').pop().toLowerCase();
+
+        if (!allowedExtensions.includes(fileExtension)) {
+            errorMessage.textContent = "Invalid file type. Only JPG, JPEG, PNG, and GIF files are allowed.";
+            errorMessage.classList.remove('hidden');
+            return;
+        }
+
+        errorMessage.classList.add('hidden');
+
+        const formData = new FormData();
+        formData.append('payment_proof', file);
+
+        fetch('/CraveOn/api/update_payment', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.redirect_url) {
+                window.location.href = data.redirect_url;
+            } else {
+                alert(data.error || 'Unexpected error occurred.');
             }
-
-            const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif'];
-            const fileExtension = file.name.split('.').pop().toLowerCase();
-
-            if (!allowedExtensions.includes(fileExtension)) {
-                errorMessage.textContent = "Invalid file type. Only JPG, JPEG, PNG, and GIF files are allowed.";
-                errorMessage.classList.remove('hidden');
-                return;
-            }
-
-            errorMessage.classList.add('hidden');
-
-            const formData = new FormData();
-            formData.append('payment_proof', file);
-
-            fetch('/CraveOn/api/update_payment', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.redirect_url) {
-                    window.location.href = data.redirect_url;
-                } else {
-                    alert(data.error || 'Unexpected error occurred.');
-                }
-            })
-            .catch(error => {
-                console.error('Error uploading payment proof:', error);
-                alert('Failed to upload payment proof.');
-            });
+        })
+        .catch(error => {
+            console.error('Error uploading payment proof:', error);
+            alert('Failed to upload payment proof.');
         });
     });
+});
 </script>
 {% endblock %}

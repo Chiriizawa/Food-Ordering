@@ -2,43 +2,74 @@
 
 {% block head %}
     <title>My Account</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 {% endblock %}
 
 {% block content %}
 <div class="max-w-xl mx-auto mt-10 p-6 bg-white shadow-lg rounded-lg">
-    <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">My Account</h2>
-    
+    <!-- Profile Image or Icon -->
+    <div class="flex flex-col items-center">
+        {% if customer.user_img %}
+            <img src="data:image/jpeg;base64,{{ customer.user_img | b64encode }}" alt="Profile"
+                 class="w-24 h-24 object-cover rounded-full border-4 border-blue-400 shadow mb-4" />
+        {% else %}
+            <div class="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-4xl mb-4 shadow">
+                <i class="fas fa-user"></i>
+            </div>
+        {% endif %}
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">My Account</h2>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="mb-4">
+                {% for category, message in messages %}
+                    <div class="p-3 rounded text-sm {% if category == 'success' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- User Info -->
     <div class="space-y-4 text-gray-700">
-        <div class="flex justify-between"><span class="font-semibold">Full Name:</span><span>{{ customer.full_name }}</span></div>
+        <div class="flex justify-between">
+            <span class="font-semibold">Full Name:</span>
+            <span>{{ customer.first_name }}{% if customer.middle_name %} {{ customer.middle_name }}{% endif %} {{ customer.last_name }}</span>
+        </div>
         <div class="flex justify-between"><span class="font-semibold">Email:</span><span>{{ customer.email }}</span></div>
         <div class="flex justify-between"><span class="font-semibold">Contact:</span><span>{{ customer.contact }}</span></div>
         <div class="flex justify-between"><span class="font-semibold">Address:</span><span>{{ customer.address }}</span></div>
     </div>
 
-    <div class="text-center mt-6">
+    <!-- Buttons -->
+    <div class="text-center mt-6 space-x-4">
         <button onclick="document.getElementById('editModal').classList.remove('hidden')" 
                 class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
             Edit Account
+        </button>
+        <button onclick="document.getElementById('imageModal').classList.remove('hidden')" 
+                class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded">
+            Upload Image
         </button>
     </div>
 </div>
 
 <!-- ✅ Edit Modal -->
-<div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 {% if show_modal %}block{% else %}hidden{% endif %}">
+<div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 hidden">
     <div class="bg-white w-full max-w-lg p-6 rounded-lg shadow-lg relative">
         <h3 class="text-xl font-bold mb-4">Edit Account</h3>
         <form method="POST" action="{{ url_for('customer.update_account') }}">
-            <!-- Full Name -->
             <div class="mb-2">
                 <label class="block text-sm font-medium">Full Name</label>
-                <input type="text" name="full_name" value="{{ (form_data.full_name if form_data else customer.full_name) | default('') }}" 
+                <input type="text" name="full_name" value="{{ (form_data.full_name if form_data else customer.first_name ~ ' ' ~ customer.middle_name ~ ' ' ~ customer.last_name) | default('') }}" 
                        class="w-full border rounded p-2 {% if form_errors and form_errors.full_name %}border-red-500{% endif %}">
                 {% if form_errors and form_errors.full_name %}
                     <p class="text-red-500 text-sm mt-1">{{ form_errors.full_name }}</p>
                 {% endif %}
             </div>
-
-            <!-- Email -->
             <div class="mb-2">
                 <label class="block text-sm font-medium">Email</label>
                 <input type="email" name="email" value="{{ (form_data.email if form_data else customer.email) | default('') }}" 
@@ -47,48 +78,45 @@
                     <p class="text-red-500 text-sm mt-1">{{ form_errors.email }}</p>
                 {% endif %}
             </div>
-
-            <!-- Contact -->
             <div class="mb-2">
                 <label class="block text-sm font-medium">Contact</label>
                 <input type="text" name="contact" value="{{ (form_data.contact if form_data else customer.contact) | default('') }}" 
-                       class="w-full border rounded p-2 {% if form_errors and form_errors.contact %}border-red-500{% endif %}" >
+                       class="w-full border rounded p-2 {% if form_errors and form_errors.contact %}border-red-500{% endif %}">
                 {% if form_errors and form_errors.contact %}
                     <p class="text-red-500 text-sm mt-1">{{ form_errors.contact }}</p>
                 {% endif %}
             </div>
-
-            <!-- Address -->
             <div class="mb-4">
                 <label class="block text-sm font-medium">Address</label>
-                <textarea name="address" class="w-full border rounded p-2 {% if form_errors and form_errors.address %}border-red-500{% endif %}" >{{ (form_data.address if form_data else customer.address) | default('') }}</textarea>
+                <textarea name="address" class="w-full border rounded p-2 {% if form_errors and form_errors.address %}border-red-500{% endif %}">{{ (form_data.address if form_data else customer.address) | default('') }}</textarea>
                 {% if form_errors and form_errors.address %}
                     <p class="text-red-500 text-sm mt-1">{{ form_errors.address }}</p>
                 {% endif %}
             </div>
 
             <div class="flex justify-end">
-                <button type="button" onclick="document.getElementById('editModal').classList.add('hidden')" 
-                        class="mr-2 bg-gray-300 hover:bg-gray-400 text-black py-2 px-4 rounded">
-                    Cancel
-                </button>
-                <button type="submit" class="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded">
-                    Save Changes
-                </button>
+                <button type="button" onclick="document.getElementById('editModal').classList.add('hidden')" class="mr-2 bg-gray-300 hover:bg-gray-400 text-black py-2 px-4 rounded">Cancel</button>
+                <button type="submit" class="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded">Save Changes</button>
             </div>
         </form>
-
-        <!-- Close Button -->
-        <button onclick="document.getElementById('editModal').classList.add('hidden')" 
-                class="absolute top-2 right-2 text-gray-500 hover:text-black text-2xl font-bold">
-            &times;
-        </button>
+        <button onclick="document.getElementById('editModal').classList.add('hidden')" class="absolute top-2 right-2 text-gray-500 hover:text-black text-2xl font-bold">&times;</button>
     </div>
 </div>
 
-{% if show_modal %}
-<script>
-    document.getElementById("editModal").classList.remove("hidden");
-</script>
-{% endif %}
+<!-- ✅ Upload Image Modal -->
+<div id="imageModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 hidden">
+    <div class="bg-white w-full max-w-lg p-6 rounded-lg shadow-lg relative">
+        <h3 class="text-xl font-bold mb-4">Upload Profile Image</h3>
+        <form method="POST" action="{{ url_for('customer.upload_image') }}" enctype="multipart/form-data">
+            <div class="mb-4">
+                <input type="file" name="profile_image" accept="image/*" class="w-full border rounded p-2" required>
+            </div>
+            <div class="flex justify-end">
+                <button type="button" onclick="document.getElementById('imageModal').classList.add('hidden')" class="mr-2 bg-gray-300 hover:bg-gray-400 text-black py-2 px-4 rounded">Cancel</button>
+                <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded">Upload</button>
+            </div>
+        </form>
+        <button onclick="document.getElementById('imageModal').classList.add('hidden')" class="absolute top-2 right-2 text-gray-500 hover:text-black text-2xl font-bold">&times;</button>
+    </div>
+</div>
 {% endblock %}

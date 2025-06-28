@@ -1,23 +1,20 @@
-CREATE DATABASE craveon;
 
-USE craveon;
-
-CREATE TABLE customers (
-	customer_id INT AUTO_INCREMENT PRIMARY KEY,
-	full_name VARCHAR(100) NOT NULL,
+CREATE TABLE users (
+	user_id INT AUTO_INCREMENT PRIMARY KEY,
+	first_name VARCHAR(100) NOT NULL,
+    middle_name VARCHAR(100) NULL,
+    last_name VARCHAR(100) NOT NULL,
 	email VARCHAR(100) NOT NULL,
 	contact VARCHAR(11) NOT NULL,
 	address TEXT NOT NULL,
 	password VARCHAR(100) NOT NULL,
 	is_archived BOOLEAN DEFAULT FALSE,
-	status ENUM('Active', 'Inactive') DEFAULT 'Active'
+	status ENUM('Active', 'Inactive') DEFAULT 'Active',
+    user_img LONGBLOB NULL,
+    admin_username VARCHAR(100) NULL,
+    admin_password VARCHAR(100) NULL
 );
 
-CREATE TABLE admin (
-    admin_id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(100) NOT NULL,
-    password VARCHAR(100) NOT NULL
-);
 
 CREATE TABLE categories (
     category_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -37,13 +34,13 @@ CREATE TABLE items(
 
 CREATE TABLE orders(
 	order_id INT AUTO_INCREMENT PRIMARY KEY,
-	customer_id INT,
+	user_id INT,
     total_amount DECIMAL(10,2) NOT NULL,
 	status ENUM('Pending','Processing', 'Completed', 'Cancelled') DEFAULT 'Pending',
 	payment_ss LONGBLOB NOT NULL,
 	cancellation_reason TEXT,
 	ordered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
 CREATE TABLE order_items(
@@ -55,15 +52,10 @@ CREATE TABLE order_items(
 	FOREIGN KEY (item_id) REFERENCES items(item_id)
 );
 
-CREATE TABLE transaction_history (
-    transaction_id INT AUTO_INCREMENT PRIMARY KEY,
-    order_id INT NOT NULL,
-    customer_id INT NOT NULL,
-    total_amount DECIMAL(10,2) NOT NULL,
-    status ENUM('Pending','Processing', 'Completed', 'Cancelled') NOT NULL,
-    ordered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (order_id) REFERENCES orders(order_id),
-    FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
-);
+
+
+
+
+
+
 
