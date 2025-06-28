@@ -729,66 +729,59 @@ def api_orders():
         db.close()
 
 import base64
+import imghdr
+from flask import Blueprint, request, session, jsonify, url_for
 from werkzeug.utils import secure_filename
 
-# Allowed file extensions for images
-ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif'}
 
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+def allowed_file(filename, file_data):
+    extension = filename.rsplit('.', 1)[-1].lower()
+    file_type = imghdr.what(None, h=file_data)
+    return (
+        '.' in filename and
+        extension in ALLOWED_EXTENSIONS and
+        file_type in ALLOWED_EXTENSIONS
+    )
 
 @customer.route('/api/update_payment', methods=['POST'])
 def update_payment():
     if 'user' not in session:
         return jsonify({'error': 'User not logged in'}), 401
 
-    if 'payment_proof' not in request.files:
+    file = request.files.get('payment_proof')
+    if not file or file.filename == '':
         return jsonify({'error': 'No file uploaded'}), 400
 
-    file = request.files['payment_proof']
+    image_bytes = file.read()  # ✅ Only read once
 
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
-
-    if not allowed_file(file.filename):
-        return jsonify({'error': 'Invalid file type. Only JPG, JPEG, PNG, and GIF files are allowed.'}), 400
+    if not allowed_file(file.filename, image_bytes):  # ✅ Pass both filename and bytes
+        return jsonify({'error': 'Invalid file type.'}), 400
 
     try:
         db = connect_db()
         cursor = db.cursor()
         customer_id = session['user']
 
-        # Read and encode the file in Base64
-        image_bytes = file.read()
         payment_base64 = base64.b64encode(image_bytes).decode('utf-8')
 
-        # Get the most recent order
         cursor.execute("""
             SELECT order_id FROM orders
-            WHERE user_id = %s
-            ORDER BY ordered_at DESC
-            LIMIT 1
+            WHERE user_id = %s AND status = 'Pending'
+            ORDER BY ordered_at DESC LIMIT 1
         """, (customer_id,))
         row = cursor.fetchone()
-
         if not row:
-            return jsonify({'error': 'No order found to update payment'}), 404
+            return jsonify({'error': 'No order found to update'}), 404
 
         order_id = row[0]
-
-        # Update order with payment screenshot
         cursor.execute("""
-            UPDATE orders
-            SET payment_ss = %s
-            WHERE order_id = %s
+            UPDATE orders SET payment_ss = %s WHERE order_id = %s
         """, (payment_base64, order_id))
         db.commit()
 
-        # Create new empty order
-        cursor.execute("""
-            INSERT INTO orders (user_id)
-            VALUES (%s)
-        """, (customer_id,))
+        cursor.execute("INSERT INTO orders (user_id, total_amount) VALUES (%s, 0.00)", (customer_id,))
         db.commit()
 
         return jsonify({'redirect_url': url_for('customer.thankyou')})
@@ -802,6 +795,7 @@ def update_payment():
         db.close()
 
 
+
         
 @customer.route('/thankyou')
 def thankyou():
@@ -811,6 +805,8 @@ def thankyou():
 def myorders():
         return render_template('myorders.html')
     
+import base64
+
 @customer.route('/api/myorders', methods=['GET'])
 def my_orders():
     if 'user' not in session:
@@ -822,9 +818,9 @@ def my_orders():
     try:
         customer_id = session['user']
 
-        # Get customer info
+        # Get updated customer info
         cursor.execute("""
-            SELECT user_id, full_name, email, contact, address
+            SELECT user_id, first_name, middle_name, last_name, email, contact, address, user_img
             FROM users
             WHERE user_id = %s
         """, (customer_id,))
@@ -833,15 +829,18 @@ def my_orders():
         if not cust_row:
             return jsonify({'error': 'Customer not found'}), 404
 
+        full_name = f"{cust_row[1]} {' ' + cust_row[2] if cust_row[2] else ''} {cust_row[3]}".strip()
+
         customer = {
             'id': cust_row[0],
-            'name': cust_row[1],
-            'email': cust_row[2],
-            'contact': cust_row[3],
-            'address': cust_row[4]
+            'name': full_name,
+            'email': cust_row[4],
+            'contact': cust_row[5],
+            'address': cust_row[6],
+            'user_img': base64.b64encode(cust_row[7]).decode('utf-8') if cust_row[7] else None
         }
 
-        # Get all orders for the customer ordered by the latest first
+        # Get all orders for the customer ordered by latest first
         cursor.execute("""
             SELECT order_id, ordered_at, total_amount, status
             FROM orders
@@ -853,7 +852,7 @@ def my_orders():
         if not order_rows:
             return jsonify({'customer': customer, 'orders': []})
 
-        # Skip the most recent order (the first order)
+        # Skip the most recent order
         orders = []
         for order_id, ordered_at, total_amount, status in order_rows[1:]:
             cursor.execute("""
@@ -876,7 +875,7 @@ def my_orders():
             orders.append({
                 'order_id': order_id,
                 'ordered_at': ordered_at.strftime('%Y-%m-%d %H:%M'),
-                'total_amount': total_amount,
+                'total_amount': float(total_amount),
                 'status': status,
                 'items': items
             })

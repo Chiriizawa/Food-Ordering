@@ -37,7 +37,7 @@ CREATE TABLE orders(
 	user_id INT,
     total_amount DECIMAL(10,2) NOT NULL,
 	status ENUM('Pending','Processing', 'Completed', 'Cancelled') DEFAULT 'Pending',
-	payment_ss LONGBLOB NOT NULL,
+	payment_ss LONGTEXT NULL,
 	cancellation_reason TEXT,
 	ordered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id)

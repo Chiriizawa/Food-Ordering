@@ -11,7 +11,7 @@ bcrypt = Bcrypt()
 
 db_config = {
     'host': 'localhost',
-    'database': 'craveon',
+    'database': 'test_integ',
     'user': 'root',
     'password': 'haharaymund',
 }
@@ -43,7 +43,7 @@ def index():
     cursor = db.cursor()
 
     # Total customers
-    cursor.execute("SELECT COUNT(*) FROM customers")
+    cursor.execute("SELECT COUNT(*) FROM users")
     total_customers = cursor.fetchone()[0]
 
     # Total sales (completed only)
@@ -103,7 +103,7 @@ def login():
             try:
                 connection = mysql.connector.connect(**db_config)
                 cursor = connection.cursor()
-                cursor.execute("INSERT INTO admin (username, password) VALUES(%s, %s)", (email, password))
+                cursor.execute("INSERT INTO users (admin_username, admin_password) VALUES(%s, %s)", (email, password))
                 connection.commit()
                 session['admin'] = email
                 return redirect(url_for('admin.index'))
@@ -138,19 +138,27 @@ def api_manage_users():
         connection = connect_db()
         cursor = connection.cursor(dictionary=True)
 
-        # Active users
-        cursor.execute("SELECT * FROM customers WHERE is_archived = FALSE")
+        # Get active users
+        cursor.execute("SELECT * FROM users WHERE is_archived = FALSE")
         active_users = cursor.fetchall()
 
-        # Archived users
-        cursor.execute("SELECT * FROM customers WHERE is_archived = TRUE")
+        # Get archived users
+        cursor.execute("SELECT * FROM users WHERE is_archived = TRUE")
         archived_users = cursor.fetchall()
 
-        # Completed orders
+        # Convert image to base64 for frontend use
+        for user in active_users + archived_users:
+            if user.get("user_img"):
+                import base64
+                user["user_img"] = base64.b64encode(user["user_img"]).decode('utf-8')
+            else:
+                user["user_img"] = None
+
+        # Get completed orders
         cursor.execute("""
             SELECT 
                 o.order_id,
-                o.customer_id,
+                o.user_id,
                 o.total_amount,
                 o.status,
                 o.ordered_at
@@ -160,7 +168,7 @@ def api_manage_users():
         """)
         all_transactions = cursor.fetchall()
 
-        # Items in orders
+        # Get items from orders
         cursor.execute("""
             SELECT 
                 oi.order_id,
@@ -180,15 +188,12 @@ def api_manage_users():
                 "quantity": item["quantity"]
             })
 
-        # Attach items to transactions, then group by customer_id
+        # Group transactions by user
         transactions_by_user = {}
         for txn in all_transactions:
             txn["items"] = items_by_order.get(txn["order_id"], [])
-            uid = txn["customer_id"]
+            uid = txn["user_id"]
             transactions_by_user.setdefault(uid, []).append(txn)
-
-        cursor.close()
-        connection.close()
 
         return jsonify({
             "active_users": active_users,
@@ -199,37 +204,46 @@ def api_manage_users():
     except Exception as e:
         return jsonify({"error": f"Error fetching users: {str(e)}"}), 500
 
+    finally:
+        cursor.close()
+        connection.close()
 
-# Archive user (set inactive)
 @admin.route('/archive-user/<int:user_id>', methods=['POST'])
 def archive_user(user_id):
     try:
         connection = connect_db()
         cursor = connection.cursor()
-        cursor.execute("UPDATE customers SET is_archived = TRUE, status = 'Inactive' WHERE customer_id = %s", (user_id,))
+        cursor.execute("""
+            UPDATE users
+            SET is_archived = TRUE
+            WHERE user_id = %s
+        """, (user_id,))
         connection.commit()
         cursor.close()
         connection.close()
-        session['message'] = "User archived successfully."
+        return jsonify({'message': 'User archived successfully'}), 200
     except Exception as e:
-        session['message'] = f"Error archiving user: {str(e)}"
-    return redirect(url_for('admin.users'))
+        print("Error archiving user:", str(e))
+        return jsonify({'error': f"Error archiving user: {str(e)}"}), 500
 
-
-# Unarchive user (set active)
 @admin.route('/unarchive-user/<int:user_id>', methods=['POST'])
 def unarchive_user(user_id):
     try:
         connection = connect_db()
         cursor = connection.cursor()
-        cursor.execute("UPDATE customers SET is_archived = FALSE, status = 'Active' WHERE customer_id = %s", (user_id,))
+        cursor.execute("""
+            UPDATE users
+            SET is_archived = FALSE
+            WHERE user_id = %s
+        """, (user_id,))
         connection.commit()
         cursor.close()
         connection.close()
-        session['message'] = "User unarchived successfully."
+        return jsonify({'message': 'User unarchived successfully'}), 200
     except Exception as e:
-        session['message'] = f"Error unarchiving user: {str(e)}"
-    return redirect(url_for('admin.users'))
+        print("Error unarchiving user:", str(e))
+        return jsonify({'error': f"Error unarchiving user: {str(e)}"}), 500
+
 
 @admin.route('/Manage-Categories', methods=['GET', 'POST'])
 def categories():
@@ -595,7 +609,7 @@ def edit_item(item_id):
 @admin.route('/Manage-Orders', methods=['GET'])
 def morders():
         return render_template("morders.html")
-    
+
 @admin.route('/api/morders', methods=['GET'])
 def manage_orders():
     if 'admin' not in session:
@@ -605,12 +619,12 @@ def manage_orders():
     cursor = db.cursor()
 
     try:
-        # Get all orders with customer info
+        # Get all orders with customer info (using users table)
         cursor.execute("""
             SELECT o.order_id, o.ordered_at, o.total_amount, o.status, o.payment_ss, o.cancellation_reason,
-                   c.full_name, c.customer_id
+                   u.user_id, u.first_name, u.middle_name, u.last_name, u.email, u.contact, u.address
             FROM orders o
-            JOIN customers c ON o.customer_id = c.customer_id
+            JOIN users u ON o.user_id = u.user_id
             ORDER BY o.ordered_at DESC
         """)
 
@@ -621,17 +635,19 @@ def manage_orders():
 
         for row in order_rows:
             (order_id, ordered_at, total_amount, status, payment_ss, cancel_reason,
-             full_name, customer_id) = row
+             user_id, first_name, middle_name, last_name, email, contact, address) = row
 
-            if customer_id not in customers_dict:
-                customers_dict[customer_id] = {
-                    'customer_id': customer_id,
+            full_name = f"{first_name} {' ' + middle_name if middle_name else ''} {last_name}".strip()
+
+            if user_id not in customers_dict:
+                customers_dict[user_id] = {
+                    'user_id': user_id,
                     'full_name': full_name,
-                    'email': '',     # Optional: you can fetch this too
-                    'contact': '',
-                    'address': ''
+                    'email': email,
+                    'contact': contact,
+                    'address': address
                 }
-                orders_grouped[customer_id] = []
+                orders_grouped[user_id] = []
 
             # Get items for this order
             cursor.execute("""
@@ -642,33 +658,52 @@ def manage_orders():
             """, (order_id,))
             item_rows = cursor.fetchall()
 
-            items = [{
-                'name': item_name,
-                'price': float(price),
-                'image': base64.b64encode(image).decode('utf-8') if image else None,
-                'quantity': quantity
-            } for item_name, price, image, quantity in item_rows]
+            items = [
+                {
+                    'name': item_name,
+                    'price': float(price),
+                    'image': base64.b64encode(image).decode('utf-8') if image else None,
+                    'quantity': quantity
+                }
+                for item_name, price, image, quantity in item_rows
+            ]
 
-            orders_grouped[customer_id].append({
+            # Handle payment screenshot
+            encoded_ss = None
+            if payment_ss:
+                if isinstance(payment_ss, str):
+                    # If it's already a base64 string
+                    if payment_ss.startswith('data:image'):
+                        encoded_ss = payment_ss
+                    else:
+                        # If it's a base64 string without data URI
+                        encoded_ss = f"data:image/jpeg;base64,{payment_ss}"
+                else:
+                    # If it's binary data
+                    try:
+                        encoded_ss = f"data:image/jpeg;base64,{base64.b64encode(payment_ss).decode('utf-8')}"
+                    except Exception as e:
+                        print(f"Error encoding payment screenshot: {e}")
+                        encoded_ss = None
+
+            orders_grouped[user_id].append({
                 'order_id': order_id,
                 'ordered_at': ordered_at.strftime('%Y-%m-%d %H:%M'),
                 'total_amount': float(total_amount or 0.0),
                 'status': status,
-                'payment_ss': payment_ss if payment_ss else None,  # already base64
+                'payment_ss': encoded_ss,
                 'cancellation_reason': cancel_reason or '',
                 'items': items
             })
 
         customers = []
-        for cust_id, cust_data in customers_dict.items():
+        for user_id, customer in customers_dict.items():
             customers.append({
-                'customer': cust_data,
-                'orders': orders_grouped[cust_id]
+                'customer': customer,
+                'orders': orders_grouped[user_id]
             })
 
-        return jsonify({
-            'customers': customers
-        })
+        return jsonify({'customers': customers})
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -676,7 +711,6 @@ def manage_orders():
     finally:
         cursor.close()
         db.close()
-
 
 @admin.route('/api/processing_order', methods=['POST'])
 def processing_order():

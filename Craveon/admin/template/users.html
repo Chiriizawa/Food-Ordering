@@ -9,6 +9,12 @@
     .small-list li {
         font-size: 0.85rem;
     }
+    .profile-img {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 50%;
+    }
 </style>
 {% endblock %}
 
@@ -76,76 +82,72 @@ document.addEventListener('DOMContentLoaded', () => {
             const archivedBody = document.querySelector('#archivedUsersTable tbody');
             const modalContainer = document.getElementById('modalsContainer');
 
-            if (activeUsers.length === 0) {
-                activeBody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No active users found.</td></tr>`;
-            }
-
-            activeUsers.forEach(user => {
-                const modalId = `userModal${user.customer_id}`;
-                const txnRows = getTransactionRows(user.customer_id, transactions);
+            const createRow = (user, isArchived) => {
+                const modalId = `userModal${user.user_id}`;
+                const txnRows = getTransactionRows(user.user_id, transactions);
                 const statusBadge = user.status === 'Active' ? 'bg-success' : 'bg-secondary';
 
-                activeBody.innerHTML += `
+                const actionButtons = `
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#${modalId}">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                        <button class="btn btn-sm btn-${isArchived ? 'success' : 'danger'} archive-btn"
+                                data-user-id="${user.user_id}"
+                                data-action="${isArchived ? 'unarchive' : 'archive'}">
+                            <i class="fas fa-${isArchived ? 'undo' : 'archive'}"></i> ${isArchived ? 'Unarchive' : 'Archive'}
+                        </button>
+                    </div>
+                `;
+
+                const rowHTML = `
                     <tr>
-                        <td>${user.full_name}</td>
+                        <td>${user.first_name} ${user.middle_name || ''} ${user.last_name}</td>
                         <td>${user.email}</td>
                         <td>${user.contact}</td>
                         <td>${user.address}</td>
                         <td><span class="badge ${statusBadge}">${user.status}</span></td>
-                        <td>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#${modalId}">
-                                    <i class="fas fa-eye"></i> View
-                                </button>
-                                <form action="/admin/archive-user/${user.customer_id}" method="post">
-                                    <button class="btn btn-sm btn-danger" type="submit">
-                                        <i class="fas fa-archive"></i> Archive
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
+                        <td>${actionButtons}</td>
                     </tr>
                 `;
 
-                modalContainer.innerHTML += getUserModal(user, txnRows, modalId, false);
-            });
+                const modalHTML = getUserModal(user, txnRows, modalId, isArchived);
+                modalContainer.innerHTML += modalHTML;
+                return rowHTML;
+            };
 
-            if (archivedUsers.length === 0) {
-                archivedBody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No archived users found.</td></tr>`;
-            }
+            activeBody.innerHTML = activeUsers.length
+                ? activeUsers.map(user => createRow(user, false)).join('')
+                : `<tr><td colspan="6" class="text-center text-muted">No active users found.</td></tr>`;
 
-            archivedUsers.forEach(user => {
-                const modalId = `userModal${user.customer_id}`;
-                const txnRows = getTransactionRows(user.customer_id, transactions);
-
-                archivedBody.innerHTML += `
-                    <tr>
-                        <td>${user.full_name}</td>
-                        <td>${user.email}</td>
-                        <td>${user.contact}</td>
-                        <td>${user.address}</td>
-                        <td><span class="badge bg-secondary">Archived</span></td>
-                        <td>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#${modalId}">
-                                    <i class="fas fa-eye"></i> View
-                                </button>
-                                <form action="/admin/unarchive-user/${user.customer_id}" method="post">
-                                    <button class="btn btn-sm btn-success" type="submit">
-                                        <i class="fas fa-undo"></i> Unarchive
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-
-                modalContainer.innerHTML += getUserModal(user, txnRows, modalId, true);
-            });
+            archivedBody.innerHTML = archivedUsers.length
+                ? archivedUsers.map(user => createRow(user, true)).join('')
+                : `<tr><td colspan="6" class="text-center text-muted">No archived users found.</td></tr>`;
         })
         .catch(err => {
             alert("Error loading users: " + err.message);
         });
+});
+
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.archive-btn')) {
+        const btn = e.target.closest('.archive-btn');
+        const userId = btn.getAttribute('data-user-id');
+        const action = btn.getAttribute('data-action');
+        const endpoint = `/Admin/${action}-user/${userId}`;
+
+        fetch(endpoint, {
+            method: 'POST'
+        })
+        .then(res => res.json().then(data => ({ ok: res.ok, body: data })))
+        .then(({ ok, body }) => {
+            if (!ok) throw new Error(body.error || 'Unknown error');
+            window.location.reload(); // Silent success
+        })
+        .catch(err => {
+            alert("Error: " + err.message);
+        });
+    }
 });
 
 function getTransactionRows(userId, transactions) {
@@ -187,6 +189,10 @@ function getTransactionRows(userId, transactions) {
 }
 
 function getUserModal(user, txnRows, modalId, archived) {
+    const img = user.user_img
+        ? `<img src="data:image/jpeg;base64,${user.user_img}" class="profile-img mb-3" alt="User Image">`
+        : `<i class="fas fa-user-circle text-secondary mb-3" style="font-size: 4rem;"></i>`;
+
     return `
     <div class="modal fade" id="${modalId}" tabindex="-1" aria-labelledby="${modalId}Label" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -194,15 +200,16 @@ function getUserModal(user, txnRows, modalId, archived) {
                 <div class="modal-header">
                     <h5 class="modal-title" id="${modalId}Label">User Details</h5>
                 </div>
-                <div class="modal-body">
-                    <p><strong>Name:</strong> ${user.full_name}</p>
+                <div class="modal-body text-center">
+                    ${img}
+                    <p><strong>Name:</strong> ${user.first_name} ${user.middle_name || ''} ${user.last_name}</p>
                     <p><strong>Email:</strong> ${user.email}</p>
                     <p><strong>Phone:</strong> ${user.contact}</p>
                     <p><strong>Address:</strong> ${user.address}</p>
                     <p><strong>Status:</strong> ${archived ? 'Archived' : user.status}</p>
                     <hr>
-                    <h6>Transaction History</h6>
-                    ${txnRows}
+                    <h6 class="text-start">Transaction History</h6>
+                    <div class="text-start">${txnRows}</div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>

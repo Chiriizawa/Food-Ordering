@@ -5,7 +5,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/customer/myorder.css') }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Additional custom styles if needed */
+        /* Additional custom styles */
         .modal-container {
             display: flex;
             align-items: center;
@@ -21,98 +21,201 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
+        .payment-ss-container {
+            max-height: 300px;
+            overflow: auto;
+        }
+        .payment-ss-thumbnail {
+            height: 50px;
+            width: 50px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .payment-ss-thumbnail:hover {
+            transform: scale(1.05);
+        }
+        .status-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+        .status-pending {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        .status-processing {
+            background-color: #ffedd5;
+            color: #9a3412;
+        }
+        .status-accepted {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+        .status-completed {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+        .status-cancelled {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
     </style>
 {% endblock %}
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 py-10">
-    <div class="overflow-x-auto">
-        <table class="min-w-full table-auto border-collapse">
-            <thead>
-                <tr>
-                    <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700 bg-gray-100">Customer Name</th>
-                    <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700 bg-gray-100">Items</th>
-                    <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700 bg-gray-100">Quantity</th>
-                    <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700 bg-gray-100">Total</th>
-                    <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700 bg-gray-100">Ordered At</th>
-                    <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700 bg-gray-100">Status</th>
-                    <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700 bg-gray-100">Action</th>
-                </tr>
-            </thead>
-            <tbody id="orders-table-body">
-                <!-- Orders will be dynamically inserted here -->
-            </tbody>
-        </table>
-    </div>
+    <h1 class="text-2xl font-bold text-gray-800 mb-6">Manage Orders</h1>
     
-    <!-- Pagination Controls -->
-    <div class="flex justify-between items-center mt-4">
-        <div id="pagination-info" class="text-sm text-gray-600"></div>
-        <div class="flex space-x-2">
-            <button id="prev-page" class="px-4 py-2 bg-gray-200 rounded-md disabled:opacity-50">Previous</button>
-            <div id="page-numbers" class="flex space-x-1"></div>
-            <button id="next-page" class="px-4 py-2 bg-gray-200 rounded-md disabled:opacity-50">Next</button>
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="orders-table-body" class="bg-white divide-y divide-gray-200">
+                    <!-- Orders will be dynamically inserted here -->
+                </tbody>
+            </table>
         </div>
-    </div>
-</div>
-
-<!-- Centered Order Details Modal -->
-<div id="order-details-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden z-50 modal-container">
-    <div class="bg-white p-6 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto mx-4">
-        <h2 class="text-xl font-bold text-center mb-4">Order Details</h2>
-        <div class="space-y-3">
-            <div><strong>Customer Name:</strong> <span id="modal-customer-name"></span></div>
-            <div><strong>Items:</strong> <ul id="modal-items-list" class="list-disc list-inside"></ul></div>
-            <div><strong>Total:</strong> ₱<span id="modal-total"></span></div>
-            <div><strong>Ordered At:</strong> <span id="modal-ordered-at"></span></div>
-            <div><strong>Status:</strong> <span id="modal-status"></span></div>
-            <div id="modal-cancel-reason" class="hidden">
-                <strong>Cancel Reason:</strong> <span id="modal-reason-text"></span>
+        
+        <!-- Pagination Controls -->
+        <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div class="flex-1 flex justify-between sm:hidden">
+                <button id="prev-page-mobile" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Previous</button>
+                <button id="next-page-mobile" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Next</button>
             </div>
-            <div>
-                <strong>Payment Screenshot:</strong>
-                <div class="mt-2 border rounded p-2 bg-gray-100 flex justify-center items-center" style="min-height: 200px;">
-                    <img id="modal-payment-screenshot" class="object-contain max-w-full max-h-80 hidden" alt="Payment Screenshot" />
-                    <span id="modal-no-screenshot" class="text-gray-500">No payment screenshot available</span>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div id="pagination-info" class="text-sm text-gray-700"></div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        <button id="prev-page" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <span class="sr-only">Previous</span>
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        <div id="page-numbers" class="flex"></div>
+                        <button id="next-page" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <span class="sr-only">Next</span>
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </nav>
                 </div>
             </div>
         </div>
-        <button id="accept-order-button" class="mt-6 w-full py-2 bg-green-500 text-white rounded-md">Accept Order</button>
-        <button id="processing-order-button" class="mt-2 w-full py-2 processing-btn text-white rounded-md">Mark as Processing</button>
-        <button id="cancel-order-button" class="mt-2 w-full py-2 bg-red-500 text-white rounded-md">Cancel Order</button>
-        <button id="close-order-modal" class="mt-2 w-full py-2 bg-gray-400 text-white rounded-md">Close</button>
     </div>
 </div>
 
-<!-- Centered Confirm Accept Order Modal -->
+<!-- Order Details Modal -->
+<div id="order-details-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden z-50 modal-container">
+    <div class="bg-white p-6 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto mx-4">
+        <div class="flex justify-between items-start mb-4">
+            <h2 class="text-xl font-bold text-gray-800">Order Details</h2>
+            <button id="close-order-modal" class="text-gray-500 hover:text-gray-700">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-4">
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h3 class="font-medium text-gray-900 mb-2">Customer Information</h3>
+                    <div class="space-y-2">
+                        <div><strong>Name:</strong> <span id="modal-customer-name"></span></div>
+                        <div><strong>Order ID:</strong> <span id="modal-order-id"></span></div>
+                        <div><strong>Order Date:</strong> <span id="modal-ordered-at"></span></div>
+                        <div><strong>Status:</strong> <span id="modal-status"></span></div>
+                        <div id="modal-cancel-reason" class="hidden">
+                            <strong>Cancel Reason:</strong> <span id="modal-reason-text" class="text-red-600"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h3 class="font-medium text-gray-900 mb-2">Order Items</h3>
+                    <ul id="modal-items-list" class="divide-y divide-gray-200">
+                        <!-- Items will be inserted here -->
+                    </ul>
+                    <div class="mt-4 pt-4 border-t border-gray-200">
+                        <div class="flex justify-between font-medium">
+                            <span>Total:</span>
+                            <span>₱<span id="modal-total"></span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h3 class="font-medium text-gray-900 mb-2">Payment Details</h3>
+                    <div class="mt-2">
+                        <strong>Payment Screenshot:</strong>
+                        <div class="mt-2 border rounded p-2 bg-gray-100 payment-ss-container flex justify-center items-center" style="min-height: 200px;">
+                            <img id="modal-payment-screenshot" class="object-contain max-w-full max-h-80 hidden" alt="Payment Screenshot"/>
+                            <span id="modal-no-screenshot" class="text-gray-500">No payment screenshot available</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h3 class="font-medium text-gray-900 mb-2">Order Actions</h3>
+                    <div class="space-y-2">
+                        <button id="accept-order-button" class="w-full py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition">Accept Order</button>
+                        <button id="processing-order-button" class="w-full py-2 processing-btn text-white rounded-md hover:bg-orange-600 transition">Mark as Processing</button>
+                        <button id="cancel-order-button" class="w-full py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition">Cancel Order</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modals (Accept, Processing, Cancel) -->
 <div id="accept-order-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden z-50 modal-container">
     <div class="bg-white p-6 rounded-lg max-w-sm w-full mx-4">
-        <h2 class="text-xl font-bold text-center mb-4">Are you sure you want to accept this order?</h2>
+        <h2 class="text-xl font-bold text-center mb-4">Confirm Order Acceptance</h2>
+        <p class="text-gray-600 mb-6">Are you sure you want to accept this order?</p>
         <div class="flex justify-between space-x-4">
-            <button id="confirm-accept-button" class="w-full py-2 bg-green-500 text-white rounded-md">Yes, Accept</button>
-            <button id="close-accept-modal" class="w-full py-2 bg-gray-400 text-white rounded-md">No, Cancel</button>
+            <button id="confirm-accept-button" class="w-full py-2 bg-green-500 text-white rounded-md hover:bg-green-600">Accept</button>
+            <button id="close-accept-modal" class="w-full py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500">Cancel</button>
         </div>
     </div>
 </div>
 
-<!-- Centered Confirm Processing Order Modal -->
 <div id="processing-order-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden z-50 modal-container">
     <div class="bg-white p-6 rounded-lg max-w-sm w-full mx-4">
-        <h2 class="text-xl font-bold text-center mb-4">Mark order as processing?</h2>
+        <h2 class="text-xl font-bold text-center mb-4">Confirm Order Processing</h2>
+        <p class="text-gray-600 mb-6">Mark this order as being processed?</p>
         <div class="flex justify-between space-x-4">
-            <button id="confirm-processing-button" class="w-full py-2 processing-btn text-white rounded-md">Yes, Processing</button>
-            <button id="close-processing-modal" class="w-full py-2 bg-gray-400 text-white rounded-md">No, Cancel</button>
+            <button id="confirm-processing-button" class="w-full py-2 processing-btn text-white rounded-md hover:bg-orange-600">Processing</button>
+            <button id="close-processing-modal" class="w-full py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500">Cancel</button>
         </div>
     </div>
 </div>
 
-<!-- Centered Confirm Cancel Order Modal -->
 <div id="cancel-order-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden z-50 modal-container">
     <div class="bg-white p-6 rounded-lg max-w-sm w-full mx-4">
-        <h2 class="text-xl font-bold text-center mb-4">Are you sure you want to cancel this order?</h2>
+        <h2 class="text-xl font-bold text-center mb-4">Confirm Order Cancellation</h2>
+        <p class="text-gray-600 mb-6">Are you sure you want to cancel this order?</p>
         <div class="flex justify-between space-x-4">
-            <button id="confirm-cancel-button" class="w-full py-2 bg-red-500 text-white rounded-md">Yes, Cancel</button>
-            <button id="close-cancel-modal" class="w-full py-2 bg-gray-400 text-white rounded-md">No, Keep</button>
+            <button id="confirm-cancel-button" class="w-full py-2 bg-red-500 text-white rounded-md hover:bg-red-600">Cancel Order</button>
+            <button id="close-cancel-modal" class="w-full py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500">Keep Order</button>
         </div>
     </div>
 </div>
@@ -121,7 +224,7 @@
 let currentOrder = null;
 let allOrders = [];
 let currentPage = 1;
-const ordersPerPage = 10; // You can adjust this number
+const ordersPerPage = 10;
 
 // Load all orders from backend API
 function loadOrders() {
@@ -130,7 +233,7 @@ function loadOrders() {
         .then(data => {
             const tableBody = document.getElementById('orders-table-body');
             if (data.error) {
-                tableBody.innerHTML = `<tr><td colspan="7" class="text-red-500 text-center">${data.error}</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-red-500">${data.error}</td></tr>`;
                 return;
             }
 
@@ -142,7 +245,10 @@ function loadOrders() {
                     if (order.items.length > 0) {
                         allOrders.push({
                             ...order,
-                            customer_name: customer.customer.full_name
+                            customer_name: customer.customer.full_name,
+                            customer_email: customer.customer.email,
+                            customer_contact: customer.customer.contact,
+                            customer_address: customer.customer.address
                         });
                     }
                 });
@@ -152,7 +258,7 @@ function loadOrders() {
             allOrders.sort((a, b) => new Date(b.ordered_at) - new Date(a.ordered_at));
 
             if (allOrders.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="7" class="text-gray-500 text-center">No orders found.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-gray-500">No orders found.</td></tr>';
                 return;
             }
 
@@ -162,7 +268,7 @@ function loadOrders() {
         })
         .catch(error => {
             console.error('Error fetching orders:', error);
-            document.getElementById('orders-table-body').innerHTML = '<tr><td colspan="7" class="text-red-500">Failed to load orders.</td></tr>';
+            document.getElementById('orders-table-body').innerHTML = '<tr><td colspan="8" class="text-center py-4 text-red-500">Failed to load orders. Please try again.</td></tr>';
         });
 }
 
@@ -175,56 +281,93 @@ function displayOrdersForPage(page) {
 
     tableBody.innerHTML = '';
     pageOrders.forEach(order => {
-        let itemNamesHtml = '';
-        let quantitiesHtml = '';
-        let total = 0;
+        const itemCount = order.items.reduce((sum, item) => sum + item.quantity, 0);
+        const total = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-        order.items.forEach(item => {
-            total += item.price * item.quantity;
-            itemNamesHtml += `<div>${item.name}</div>`;
-            quantitiesHtml += `<div>${item.quantity}</div>`;
-        });
-
+        // Get status badge class
         let statusClass = '';
+        let statusText = '';
         switch (order.status) {
-            case 'Pending': statusClass = 'text-yellow-500'; break;
-            case 'Processing': statusClass = 'text-orange-500'; break;
-            case 'Completed': statusClass = 'text-green-500'; break;
-            case 'Cancelled': statusClass = 'text-red-500'; break;
-            case 'Accepted': statusClass = 'text-blue-500'; break;
-            default: statusClass = 'text-gray-500'; break;
+            case 'Pending':
+                statusClass = 'status-pending';
+                statusText = 'Pending';
+                break;
+            case 'Processing':
+                statusClass = 'status-processing';
+                statusText = 'Processing';
+                break;
+            case 'Accepted':
+                statusClass = 'status-accepted';
+                statusText = 'Accepted';
+                break;
+            case 'Completed':
+                statusClass = 'status-completed';
+                statusText = 'Completed';
+                break;
+            case 'Cancelled':
+                statusClass = 'status-cancelled';
+                statusText = 'Cancelled';
+                break;
+            default:
+                statusClass = 'bg-gray-100 text-gray-800';
+                statusText = order.status;
+        }
+
+        // Payment screenshot thumbnail
+        let paymentSSHtml = '<span class="text-gray-400">None</span>';
+        if (order.payment_ss && order.payment_ss.trim() !== '') {
+            const src = order.payment_ss.startsWith('data:image') ? order.payment_ss : `data:image/jpeg;base64,${order.payment_ss}`;
+            paymentSSHtml = `
+                <div class="cursor-pointer" onclick="viewOrderDetailsById('${order.order_id}')">
+                    <img src="${src}" alt="Payment SS" class="payment-ss-thumbnail"/>
+                </div>
+            `;
         }
 
         const row = document.createElement('tr');
+        row.className = 'hover:bg-gray-50';
         row.innerHTML = `
-            <td class="px-6 py-4">${order.customer_name}</td>
-            <td class="px-6 py-4">${itemNamesHtml}</td>
-            <td class="px-6 py-4">${quantitiesHtml}</td>
-            <td class="px-6 py-4">₱${total.toFixed(2)}</td>
-            <td class="px-6 py-4">${order.ordered_at}</td>
-            <td class="px-6 py-4 ${statusClass}">${order.status}</td>
-            <td class="px-6 py-4">
-                <button class="view-order-btn bg-blue-500 text-white py-2 px-4 rounded-lg" data-order-id="${order.order_id}">View</button>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">${order.customer_name}</div>
+                <div class="text-sm text-gray-500">${order.customer_email}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">${itemCount} items</div>
+                <div class="text-sm text-gray-500">${order.items[0].name}${order.items.length > 1 ? ` +${order.items.length - 1} more` : ''}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₱${total.toFixed(2)}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${order.ordered_at}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="${statusClass} status-badge">${statusText}</span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <button class="view-order-btn text-blue-600 hover:text-blue-900" data-order-id="${order.order_id}">View</button>
             </td>
         `;
         tableBody.appendChild(row);
     });
 
+    // Update pagination info
+    document.getElementById('pagination-info').textContent = 
+        `Showing ${startIndex + 1} to ${endIndex} of ${allOrders.length} orders`;
+
     // Update active page button
     const pageButtons = document.querySelectorAll('.page-button');
     pageButtons.forEach(button => {
         if (parseInt(button.dataset.page) === page) {
-            button.classList.add('bg-blue-500', 'text-white');
-            button.classList.remove('bg-gray-200');
+            button.classList.add('bg-blue-50', 'border-blue-500', 'text-blue-600');
+            button.classList.remove('bg-white', 'border-gray-300', 'text-gray-500', 'hover:bg-gray-50');
         } else {
-            button.classList.remove('bg-blue-500', 'text-white');
-            button.classList.add('bg-gray-200');
+            button.classList.remove('bg-blue-50', 'border-blue-500', 'text-blue-600');
+            button.classList.add('bg-white', 'border-gray-300', 'text-gray-500', 'hover:bg-gray-50');
         }
     });
 
     // Update prev/next button states
     document.getElementById('prev-page').disabled = page === 1;
     document.getElementById('next-page').disabled = page === Math.ceil(allOrders.length / ordersPerPage);
+    document.getElementById('prev-page-mobile').disabled = page === 1;
+    document.getElementById('next-page-mobile').disabled = page === Math.ceil(allOrders.length / ordersPerPage);
 }
 
 // Setup pagination controls
@@ -240,7 +383,7 @@ function setupPagination() {
     if (currentPage > 3) {
         const ellipsis = document.createElement('span');
         ellipsis.textContent = '...';
-        ellipsis.className = 'px-4 py-2';
+        ellipsis.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700';
         pageNumbersContainer.appendChild(ellipsis);
     }
     
@@ -253,10 +396,10 @@ function setupPagination() {
     }
     
     // Show ellipsis if needed
-    if (currentPage < totalPages - 2) {
+    if (currentPage < totalPages - 2 && totalPages > 3) {
         const ellipsis = document.createElement('span');
         ellipsis.textContent = '...';
-        ellipsis.className = 'px-4 py-2';
+        ellipsis.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700';
         pageNumbersContainer.appendChild(ellipsis);
     }
     
@@ -266,32 +409,40 @@ function setupPagination() {
     }
     
     // Set up event listeners for prev/next buttons
-    document.getElementById('prev-page').addEventListener('click', () => {
-        if (currentPage > 1) {
-            currentPage--;
-            displayOrdersForPage(currentPage);
-            setupPagination();
-        }
-    });
-    
-    document.getElementById('next-page').addEventListener('click', () => {
-        if (currentPage < totalPages) {
-            currentPage++;
-            displayOrdersForPage(currentPage);
-            setupPagination();
-        }
-    });
+    document.getElementById('prev-page').addEventListener('click', goToPrevPage);
+    document.getElementById('next-page').addEventListener('click', goToNextPage);
+    document.getElementById('prev-page-mobile').addEventListener('click', goToPrevPage);
+    document.getElementById('next-page-mobile').addEventListener('click', goToNextPage);
+}
+
+function goToPrevPage() {
+    if (currentPage > 1) {
+        currentPage--;
+        displayOrdersForPage(currentPage);
+        setupPagination();
+    }
+}
+
+function goToNextPage() {
+    const totalPages = Math.ceil(allOrders.length / ordersPerPage);
+    if (currentPage < totalPages) {
+        currentPage++;
+        displayOrdersForPage(currentPage);
+        setupPagination();
+    }
 }
 
 // Helper function to add a page button
 function addPageButton(pageNumber, container) {
     const button = document.createElement('button');
     button.textContent = pageNumber;
-    button.className = 'page-button px-4 py-2 bg-gray-200 rounded-md';
+    button.className = 'page-button relative inline-flex items-center px-4 py-2 border text-sm font-medium';
     button.dataset.page = pageNumber;
     
     if (pageNumber === currentPage) {
-        button.classList.add('bg-blue-500', 'text-white');
+        button.classList.add('bg-blue-50', 'border-blue-500', 'text-blue-600');
+    } else {
+        button.classList.add('bg-white', 'border-gray-300', 'text-gray-500', 'hover:bg-gray-50');
     }
     
     button.addEventListener('click', () => {
@@ -306,12 +457,29 @@ function addPageButton(pageNumber, container) {
 // Show order details modal with data
 function showOrderModal(order) {
     document.getElementById('modal-customer-name').textContent = order.customer_name || 'Customer';
+    document.getElementById('modal-order-id').textContent = order.order_id;
 
     const itemsListEl = document.getElementById('modal-items-list');
     itemsListEl.innerHTML = '';
     order.items.forEach(item => {
         const li = document.createElement('li');
-        li.textContent = `${item.name} (x${item.quantity})`;
+        li.className = 'py-2 flex justify-between';
+        li.innerHTML = `
+            <div class="flex items-center">
+                ${item.image ? 
+                    `<img src="data:image/jpeg;base64,${item.image}" class="h-10 w-10 rounded-md object-cover mr-3" alt="${item.name}">` : 
+                    '<div class="h-10 w-10 rounded-md bg-gray-200 mr-3 flex items-center justify-center text-gray-400">No Image</div>'
+                }
+                <div>
+                    <div class="font-medium">${item.name}</div>
+                    <div class="text-sm text-gray-500">₱${item.price.toFixed(2)} each</div>
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="font-medium">x${item.quantity}</div>
+                <div class="text-sm text-gray-500">₱${(item.price * item.quantity).toFixed(2)}</div>
+            </div>
+        `;
         itemsListEl.appendChild(li);
     });
 
@@ -326,17 +494,15 @@ function showOrderModal(order) {
         document.getElementById('modal-reason-text').textContent = order.cancellation_reason;
     } else {
         cancelReasonEl.classList.add('hidden');
-        document.getElementById('modal-reason-text').textContent = '';
     }
 
     const img = document.getElementById('modal-payment-screenshot');
     const noScreenshotSpan = document.getElementById('modal-no-screenshot');
 
     if (order.payment_ss && order.payment_ss.trim() !== '') {
-        img.src = `data:image/jpeg;base64,${order.payment_ss}`;
+        img.src = order.payment_ss.startsWith('data:image') ? order.payment_ss : `data:image/jpeg;base64,${order.payment_ss}`;
         img.classList.remove('hidden');
         noScreenshotSpan.classList.add('hidden');
-        img.alt = "Payment Screenshot";
     } else {
         img.src = '';
         img.classList.add('hidden');
@@ -349,45 +515,45 @@ function showOrderModal(order) {
     const cancelBtn = document.getElementById('cancel-order-button');
 
     // Reset all buttons first
-    acceptBtn.classList.remove('disabled-btn');
-    processingBtn.classList.remove('disabled-btn');
-    cancelBtn.classList.remove('disabled-btn');
-    acceptBtn.disabled = false;
-    processingBtn.disabled = false;
-    cancelBtn.disabled = false;
+    [acceptBtn, processingBtn, cancelBtn].forEach(btn => {
+        btn.classList.remove('disabled-btn', 'opacity-50', 'cursor-not-allowed');
+        btn.disabled = false;
+    });
 
     switch(order.status) {
         case 'Pending':
             // All buttons enabled for pending orders
             break;
-        case 'Processing':
-            // All buttons enabled for processing orders
-            break;
         case 'Accepted':
-            // All buttons enabled for accepted orders
-            break;
-        case 'Cancelled':
-            // Disable accept and processing buttons for cancelled orders
-            acceptBtn.classList.add('disabled-btn');
-            processingBtn.classList.add('disabled-btn');
+            // Disable accept button if already accepted
+            acceptBtn.classList.add('disabled-btn', 'opacity-50', 'cursor-not-allowed');
             acceptBtn.disabled = true;
+            break;
+        case 'Processing':
+            // Disable processing button if already processing
+            processingBtn.classList.add('disabled-btn', 'opacity-50', 'cursor-not-allowed');
             processingBtn.disabled = true;
             break;
         case 'Completed':
-            // Disable processing and cancel buttons for completed orders
-            processingBtn.classList.add('disabled-btn');
-            cancelBtn.classList.add('disabled-btn');
-            processingBtn.disabled = true;
-            cancelBtn.disabled = true;
+            // Disable all action buttons for completed orders
+            [acceptBtn, processingBtn, cancelBtn].forEach(btn => {
+                btn.classList.add('disabled-btn', 'opacity-50', 'cursor-not-allowed');
+                btn.disabled = true;
+            });
+            break;
+        case 'Cancelled':
+            // Disable accept and processing buttons for cancelled orders
+            [acceptBtn, processingBtn].forEach(btn => {
+                btn.classList.add('disabled-btn', 'opacity-50', 'cursor-not-allowed');
+                btn.disabled = true;
+            });
             break;
         default:
             // For any other status, disable all action buttons
-            acceptBtn.classList.add('disabled-btn');
-            processingBtn.classList.add('disabled-btn');
-            cancelBtn.classList.add('disabled-btn');
-            acceptBtn.disabled = true;
-            processingBtn.disabled = true;
-            cancelBtn.disabled = true;
+            [acceptBtn, processingBtn, cancelBtn].forEach(btn => {
+                btn.classList.add('disabled-btn', 'opacity-50', 'cursor-not-allowed');
+                btn.disabled = true;
+            });
     }
 
     document.getElementById('order-details-modal').classList.remove('hidden');
@@ -415,8 +581,8 @@ document.getElementById('close-order-modal').addEventListener('click', () => {
 
 // Delegate click event for view buttons in the table
 document.getElementById('orders-table-body').addEventListener('click', event => {
-    if (event.target.classList.contains('view-order-btn')) {
-        const orderId = event.target.getAttribute('data-order-id');
+    if (event.target.classList.contains('view-order-btn') ){
+        const orderId = event.target.closest('button').getAttribute('data-order-id');
         viewOrderDetailsById(orderId);
     }
 });
@@ -440,13 +606,13 @@ document.getElementById('confirm-accept-button').addEventListener('click', () =>
     })
     .then(res => res.json())
     .then(response => {
-        alert(response.message || 'Order accepted.');
+        alert(response.message || 'Order accepted successfully.');
         document.getElementById('accept-order-modal').classList.add('hidden');
         document.getElementById('order-details-modal').classList.add('hidden');
         loadOrders(); // Reload all orders to reflect changes
     })
     .catch(err => {
-        alert('Failed to accept order.');
+        alert('Failed to accept order. Please try again.');
         console.error(err);
     });
 });
@@ -476,7 +642,7 @@ document.getElementById('confirm-processing-button').addEventListener('click', (
         loadOrders(); // Reload all orders to reflect changes
     })
     .catch(err => {
-        alert('Failed to update order status.');
+        alert('Failed to update order status. Please try again.');
         console.error(err);
     });
 });
@@ -502,17 +668,20 @@ document.getElementById('confirm-cancel-button').addEventListener('click', () =>
     fetch('/Admin/api/cancel_order', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ order_id: currentOrder.order_id, reason })
+        body: JSON.stringify({ 
+            order_id: currentOrder.order_id, 
+            reason: reason.trim() 
+        })
     })
     .then(res => res.json())
     .then(response => {
-        alert(response.message || 'Order cancelled.');
+        alert(response.message || 'Order cancelled successfully.');
         document.getElementById('cancel-order-modal').classList.add('hidden');
         document.getElementById('order-details-modal').classList.add('hidden');
         loadOrders(); // Reload all orders to reflect changes
     })
     .catch(err => {
-        alert('Failed to cancel order.');
+        alert('Failed to cancel order. Please try again.');
         console.error(err);
     });
 });
