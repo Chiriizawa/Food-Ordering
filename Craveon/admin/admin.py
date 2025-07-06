@@ -10,10 +10,10 @@ admin = Blueprint('admin', __name__, template_folder="template")
 bcrypt = Bcrypt()
 
 db_config = {
-    'host': 'localhost',
-    'database': 'test_integ',
-    'user': 'root',
-    'password': 'haharaymund',
+    'host':'10.0.0.34',
+    'database':'craveon',
+    'user':'root',
+    'password':'ClodAndrei8225'
 }
 
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif'}
@@ -103,7 +103,7 @@ def login():
             try:
                 connection = mysql.connector.connect(**db_config)
                 cursor = connection.cursor()
-                cursor.execute("INSERT INTO users (admin_username, admin_password) VALUES(%s, %s)", (email, password))
+                cursor.execute("INSERT INTO admin (admin_username, admin_password) VALUES(%s, %s)", (email, password))
                 connection.commit()
                 session['admin'] = email
                 return redirect(url_for('admin.index'))
@@ -350,6 +350,50 @@ def unarchive_category(category_id):
 
 @admin.route('/Manage-Item', methods=['GET', 'POST'])
 def manageitem():
+    # If request is for JSON (API), skip login check
+    if request.headers.get('Accept') == 'application/json':
+        try:
+            connection = connect_db()
+            cursor = connection.cursor()
+            cursor.execute("""
+                SELECT items.item_id, items.item_name, items.price, items.image, items.category_id, categories.category_name
+                FROM items
+                LEFT JOIN categories ON items.category_id = categories.category_id
+                WHERE items.is_archived = 0
+            """)
+            active_items = cursor.fetchall()
+            cursor.execute("""
+                SELECT items.item_id, items.item_name, items.price, items.image, items.category_id, categories.category_name
+                FROM items
+                LEFT JOIN categories ON items.category_id = categories.category_id
+                WHERE items.is_archived = 1
+            """)
+            archived_items = cursor.fetchall()
+            cursor.close()
+            connection.close()
+
+            def process_items(raw_items):
+                result = []
+                for item in raw_items:
+                    item_id, item_name, price, image_data, category_id, category_name = item
+                    image_base64 = base64.b64encode(image_data).decode('utf-8') if image_data else None
+                    result.append({
+                        'item_id': item_id,
+                        'item_name': item_name,
+                        'price': float(price),
+                        'image': image_base64,
+                        'category_id': category_id,
+                        'category_name': category_name or "Uncategorized"
+                    })
+                return result
+
+            return jsonify({
+                'active_items': process_items(active_items),
+                'archived_items': process_items(archived_items)
+            })
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
     if 'admin' not in session:
         return redirect(url_for('admin.login'))
 

@@ -20,17 +20,14 @@
             <div id="category-list" class="flex flex-wrap gap-2">
                 <button onclick="filterCategory('all', this)" class="category-button px-4 py-2 border rounded bg-gray-800 text-white">All</button>
                 {% for category in categories %}
-                    <button onclick="filterCategory('{{ category[1] }}', this)" class="category-button px-4 py-2 border rounded hover:bg-gray-800 hover:text-white">
-                        {{ category[1] }}
+                    <button onclick="filterCategory('{{ category.category_name }}', this)" class="category-button px-4 py-2 border rounded hover:bg-gray-800 hover:text-white">
+                        {{ category.category_name }}
                     </button>
                 {% endfor %}
             </div>
 
             <div class="relative w-full max-w-xs">
-                
-                <div class="absolute inset-y-0 left-0 flex items-center pl-3">
-                    
-                </div>
+                <!-- You can add a search bar here if needed -->
             </div>
         </div>
 
@@ -39,23 +36,23 @@
             {% for item in items %}
             <div class="bg-gray-400 rounded-lg shadow-md overflow-hidden item-card"
                 id="item-{{ loop.index }}"
-                data-name="{{ item[1] }}"
-                data-category="{{ item[4] }}">
-                {% if item[3] %}
-                    <img src="data:image/jpeg;base64,{{ item[3] }}" alt="{{ item[1] }}" class="w-full h-48 object-cover">
+                data-name="{{ item.name }}"
+                data-category="{{ item.category_name }}">
+                {% if item.image %}
+                    <img src="data:image/jpeg;base64,{{ item.image }}" alt="{{ item.name }}" class="w-full h-48 object-cover">
                 {% else %}
                     <img src="{{ url_for('static', filename='default-image.jpg') }}" alt="Default Image" class="w-full h-48 object-cover">
                 {% endif %}
                 <div class="p-4">
-                    <h5 class="text-lg text-gray-800 font-semibold mb-2">{{ item[1] }}</h5>
-                    <p class="text-sm text-gray-600 mb-3">Price: <span class="text-green-900 font-bold">₱{{ item[2] }}</span></p>
+                    <h5 class="text-lg text-gray-800 font-semibold mb-2">{{ item.name }}</h5>
+                    <p class="text-sm text-gray-600 mb-3">Price: <span class="text-green-900 font-bold">₱{{ item.price }}</span></p>
                     <div class="flex justify-between items-center">
                         <button class="bg-blue-500 text-white px-4 py-1 rounded text-sm hover:bg-blue-600"
-                            onclick="addToCart('{{ item[0] }}', '{{ item[1] }}', '{{ item[2] }}', 'data:image/jpeg;base64,{{ item[3] }}')">
+                            onclick="addToCart('{{ item.item_id }}', '{{ item.name }}', '{{ item.price }}', 'data:image/jpeg;base64,{{ item.image }}')">
                             <i class="fas fa-plus mr-1"></i> ADD
                         </button>
                         <button class="bg-emerald-400 text-white px-4 py-1 rounded text-sm hover:bg-green-600"
-                            onclick="buyNow('{{ item[0] }}', '{{ item[1] }}', '{{ item[2] }}', 'data:image/jpeg;base64,{{ item[3] }}')">
+                            onclick="buyNow('{{ item.item_id }}', '{{ item.name }}', '{{ item.price }}', 'data:image/jpeg;base64,{{ item.image }}')">
                             <i class="fas fa-shopping-cart mr-1"></i> BUY
                         </button>
                     </div>
@@ -155,7 +152,7 @@
     }
 
     function searchItems() {
-        const searchTerm = document.getElementById("search-input").value.toLowerCase();
+        const searchTerm = document.getElementById("search-input")?.value.toLowerCase() || "";
         const items = document.querySelectorAll(".item-card");
         
         items.forEach(card => {

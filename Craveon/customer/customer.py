@@ -8,6 +8,7 @@ from flask_mail import Message
 from flask_bcrypt import Bcrypt
 
 
+
 customer = Blueprint('customer', __name__, template_folder="template") 
 
 bcrypt = Bcrypt()
@@ -19,10 +20,10 @@ def make_header(response):
     return response
 
 db_config = {
-    'host':'localhost',
-    'database':'test_integ',
+    'host':'10.0.0.34',
+    'database':'craveon',
     'user':'root',
-    'password':'haharaymund',
+    'password':'ClodAndrei8225',
 }
 
 def connect_db():
@@ -52,18 +53,28 @@ def index():
 def login():
     # Prevent accessing login if already logged in and verified
     if session.get('user') and session.get('verified') is True:
+        if request.headers.get('Accept') == 'application/json':
+            return jsonify({'success': True, 'redirect': url_for("customer.index")})
         return make_header(redirect(url_for("customer.index")))
 
     # If logged in but not verified, go to verify page
     if session.get('user') and session.get('verified') is not True:
+        if request.headers.get('Accept') == 'application/json':
+            return jsonify({'success': True, 'redirect': url_for("customer.verify")})
         return make_header(redirect(url_for("customer.verify")))
 
     password_error = None
     errors = {}
 
     if request.method == "POST":
-        email = request.form.get("email", "").strip()
-        password = request.form.get("password", "").strip()
+        # Accept both form and JSON for API
+        if request.headers.get('Content-Type', '').startswith('application/json') or request.is_json:
+            data = request.get_json(force=True)
+            email = data.get("email", "").strip()
+            password = data.get("password", "").strip()
+        else:
+            email = request.form.get("email", "").strip()
+            password = request.form.get("password", "").strip()
 
         # Email validation
         if not email:
@@ -74,7 +85,7 @@ def login():
                 errors['email'] = "Invalid email format."
             else:
                 local_part = email.split('@')[0]
-                if re.fullmatch(r'\d{3}', local_part):
+                if re.fullmatch(r'\\d{3}', local_part):
                     errors['email'] = "Invalid email format. Email username cannot be exactly 3 digits."
                 else:
                     conn = connect_db()
@@ -123,11 +134,20 @@ def login():
                 session["verified"] = False
 
                 if send_verification_email(email, session["verification_code"]):
+                    if request.headers.get('Accept') == 'application/json':
+                        return jsonify({'success': True, 'redirect': url_for("customer.verify")})
                     return make_header(redirect(url_for("customer.verify")))
                 else:
+                    if request.headers.get('Accept') == 'application/json':
+                        return jsonify({'success': False, 'message': "Failed to send verification email. Please try again."}), 500
                     flash("Failed to send verification email. Please try again.", "danger")
             else:
                 password_error = "Incorrect password. Please try again."
+                if request.headers.get('Accept') == 'application/json':
+                    return jsonify({'success': False, 'message': password_error, 'email_error': errors.get('email')}), 401
+
+        elif request.headers.get('Accept') == 'application/json':
+            return jsonify({'success': False, 'message': password_error or errors.get('email'), 'email_error': errors.get('email'), 'password_error': password_error}), 400
 
     response = make_response(render_template(
         "clogin.html",
@@ -135,9 +155,6 @@ def login():
         password_error=password_error
     ))
     return make_header(response)
-
-
-
 
 def send_verification_email(email, code):
     try:
@@ -455,11 +472,13 @@ def signup():
 
     return render_template("signup.html", errors={})
 
-@customer.route('/Menu')
+@customer.route('/Menu', methods=['GET'])
 def menu():
     if 'user' not in session:
+        if request.headers.get('Accept') == 'application/json':
+            return jsonify({'success': False, 'message': 'Not logged in'}), 401
         return redirect(url_for('customer.login'))
-
+    
     connection = connect_db()
     cursor = connection.cursor()
 
@@ -474,19 +493,31 @@ def menu():
     # Fetch categories
     cursor.execute("SELECT category_id, category_name FROM categories")
     categories = cursor.fetchall()
-
     connection.close()
 
-    # Format items (encode images)
-    formatted_items = []
-    for item_id, name, price, img, category_name in items:
-        if isinstance(img, bytes):
-            img_base64 = base64.b64encode(img).decode('utf-8')
-        else:
-            img_base64 = None
-        formatted_items.append((item_id, name, price, img_base64, category_name))
+    # Prepare JSON response data
+    json_data = {
+        "items": [],
+        "categories": [{"category_id": c[0], "category_name": c[1]} for c in categories]
+    }
 
-    return render_template('menu.html', items=formatted_items, categories=categories)
+    # Format items
+    for item in items:
+        item_id, name, price, img, category_name = item
+        json_data["items"].append({
+            "item_id": item_id,
+            "name": name,
+            "price": float(price),
+            "image": base64.b64encode(img).decode('utf-8') if img else None,
+            "category_name": category_name
+        })
+
+    # Check if client accepts JSON
+    if 'application/json' in request.headers.get('Accept', ''):
+        return jsonify(json_data)
+    
+    # Default to HTML rendering
+    return render_template('menu.html', items=json_data["items"], categories=json_data["categories"])
 
 @customer.route('/buy-now', methods=['POST'])
 def buy_now():
@@ -729,7 +760,7 @@ def api_orders():
         db.close()
 
 import base64
-import imghdr
+
 from flask import Blueprint, request, session, jsonify, url_for
 from werkzeug.utils import secure_filename
 
@@ -1026,7 +1057,6 @@ def update_account():
     return redirect(url_for('customer.account'))
 
 
-import imghdr
 from werkzeug.utils import secure_filename
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}

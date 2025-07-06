@@ -5,7 +5,7 @@ USE craveon;
 CREATE TABLE users (
 	user_id INT AUTO_INCREMENT PRIMARY KEY,
 	first_name VARCHAR(100) NOT NULL,
-    middle_name VARCHAR(100) NOT NULL,
+    middle_name VARCHAR(100) NULL,
     last_name VARCHAR(100) NOT NULL,
 	email VARCHAR(100) NOT NULL,
 	contact VARCHAR(11) NOT NULL,
@@ -13,7 +13,7 @@ CREATE TABLE users (
 	password VARCHAR(100) NOT NULL,
 	is_archived BOOLEAN DEFAULT FALSE,
 	status ENUM('Active', 'Inactive') DEFAULT 'Active',
-    user_img LONGBLOB NOT NULL,
+    user_img LONGTEXT NULL,
     admin_username VARCHAR(100) NOT NULL,
     admin_password VARCHAR(100) NOT NULL
 );
