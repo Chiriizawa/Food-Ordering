@@ -1,8 +1,11 @@
+CREATE DATABASE craveon;
+
+USE craveon;
 
 CREATE TABLE users (
 	user_id INT AUTO_INCREMENT PRIMARY KEY,
 	first_name VARCHAR(100) NOT NULL,
-    middle_name VARCHAR(100) NULL,
+    middle_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
 	email VARCHAR(100) NOT NULL,
 	contact VARCHAR(11) NOT NULL,
@@ -10,9 +13,9 @@ CREATE TABLE users (
 	password VARCHAR(100) NOT NULL,
 	is_archived BOOLEAN DEFAULT FALSE,
 	status ENUM('Active', 'Inactive') DEFAULT 'Active',
-    user_img LONGBLOB NULL,
-    admin_username VARCHAR(100) NULL,
-    admin_password VARCHAR(100) NULL
+    user_img LONGBLOB NOT NULL,
+    admin_username VARCHAR(100) NOT NULL,
+    admin_password VARCHAR(100) NOT NULL
 );
 
 
@@ -37,7 +40,7 @@ CREATE TABLE orders(
 	user_id INT,
     total_amount DECIMAL(10,2) NOT NULL,
 	status ENUM('Pending','Processing', 'Completed', 'Cancelled') DEFAULT 'Pending',
-	payment_ss LONGTEXT NULL,
+	payment_ss LONGBLOB NOT NULL,
 	cancellation_reason TEXT,
 	ordered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id)
@@ -51,11 +54,5 @@ CREATE TABLE order_items(
     FOREIGN KEY (order_id) REFERENCES orders(order_id),
 	FOREIGN KEY (item_id) REFERENCES items(item_id)
 );
-
-
-
-
-
-
 
 
