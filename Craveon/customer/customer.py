@@ -997,80 +997,27 @@ def account():
 
     return render_template('account.html', customer=customer)
 
-@customer.route('/Account/Update', methods=['POST'])
-def update_account():
+@customer.route('/upload_image', methods=['POST'])
+def upload_image():
     if 'user' not in session:
+        flash('You must be logged in to upload an image.', 'error')
         return redirect(url_for('customer.login'))
 
-    user_id = session['user']
-    first_name = request.form.get('first_name', '').strip()
-    middle_name = request.form.get('middle_name', '').strip()
-    last_name = request.form.get('last_name', '').strip()
-    email = request.form.get('email', '').strip()
-    contact = request.form.get('contact', '').strip()
-    address = request.form.get('address', '').strip()
+    file = request.files.get('profile_image')
+    if not file or file.filename == '':
+        flash('No image uploaded.', 'error')
+        return redirect(url_for('customer.account'))
 
-    errors = {}
+    image_data = base64.b64encode(file.read()).decode('utf-8')
 
-    # Name validation
-    if not first_name:
-        errors['first_name'] = "First name is required."
-    elif not first_name.isalpha():
-        errors['first_name'] = "First name must contain only letters."
-
-    if middle_name and not middle_name.isalpha():
-        errors['middle_name'] = "Middle name must contain only letters."
-
-    if not last_name:
-        errors['last_name'] = "Last name is required."
-    elif not last_name.isalpha():
-        errors['last_name'] = "Last name must contain only letters."
-
-    # Email validation
-    email_pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
-    if not email:
-        errors['email'] = "Email is required."
-    elif not re.match(email_pattern, email):
-        errors['email'] = "Invalid email format."
-
-    # Contact validation
-    if not contact:
-        errors['contact'] = "Contact is required."
-    elif not contact.isdigit() or len(contact) != 11:
-        errors['contact'] = "Contact must be an 11-digit number."
-
-    # Address validation
-    if not address:
-        errors['address'] = "Address is required."
-
-    if errors:
-        # Re-fetch user data for the form
-        conn = connect_db()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM users WHERE user_id = %s", (user_id,))
-        user = cursor.fetchone()
-        cursor.close()
-        conn.close()
-
-        return render_template("account.html", user=user, form_errors=errors, form_data=request.form, show_modal=True)
-
-    # Perform update
     conn = connect_db()
     cursor = conn.cursor()
-    cursor.execute("""
-        UPDATE users
-        SET first_name = %s,
-            middle_name = %s,
-            last_name = %s,
-            email = %s,
-            contact = %s,
-            address = %s
-        WHERE user_id = %s
-    """, (first_name, middle_name or None, last_name, email, contact, address, user_id))
+    cursor.execute("UPDATE users SET user_img = %s WHERE user_id = %s", (image_data, session['user']))
     conn.commit()
     cursor.close()
     conn.close()
 
-    flash("Account details updated successfully.", "success")
+    flash('Profile image updated successfully.', 'success')
     return redirect(url_for('customer.account'))
+
 
