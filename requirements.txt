@@ -3,4 +3,4 @@ pip instal mysql-connector-python
 pip install Brcypt
 pip install flask_bcrypt
 pip install flask_mail
- 
+pip install flask_cors

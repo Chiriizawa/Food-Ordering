@@ -20,11 +20,17 @@ def make_header(response):
     return response
 
 db_config = {
-    'host':'10.0.0.34',
+    'host':'192.168.1.4',
     'database':'craveon',
     'user':'root',
-    'password':'ClodAndrei8225',
+    'password':'haharaymund',
 }
+
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 def connect_db():
     return mysql.connector.connect(**db_config)
@@ -607,11 +613,17 @@ def checkout():
         if not items:
             return jsonify({'success': False, 'message': 'Cart is empty'}), 400
 
+        print(f"[Checkout] Received items: {items}")
+
         customer_id = session['user']
         connection = connect_db()
+        if not connection:
+            print("[Checkout Error] Database connection failed")
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+
         cursor = connection.cursor()
 
-        # Check for an existing active order
+        # Check for existing active order
         cursor.execute("""
             SELECT order_id FROM orders
             WHERE user_id = %s AND status != 'completed'
@@ -621,20 +633,29 @@ def checkout():
 
         if order_row:
             order_id = order_row[0]
+            print(f"[Checkout] Reusing existing order: {order_id}")
         else:
-            # Calculate total
-            total_amount = sum(float(item['price']) * int(item['quantity']) for item in items)
+            try:
+                total_amount = sum(float(item['price']) * int(item['quantity']) for item in items)
+            except Exception as calc_error:
+                print(f"[Checkout Error] Total calculation failed: {calc_error}")
+                return jsonify({'success': False, 'message': 'Invalid item data'}), 400
+
             cursor.execute("""
                 INSERT INTO orders (user_id, total_amount, status)
                 VALUES (%s, %s, 'pending')
             """, (customer_id, total_amount))
             order_id = cursor.lastrowid
+            print(f"[Checkout] New order created: {order_id}")
 
         for item in items:
             item_id = item.get('item_id')
             quantity = int(item.get('quantity', 1))
 
-            # Check if item already exists in this order
+            if not item_id:
+                print("[Checkout Error] Item ID missing in request")
+                return jsonify({'success': False, 'message': 'Missing item ID'}), 400
+
             cursor.execute("""
                 SELECT quantity FROM order_items
                 WHERE order_id = %s AND item_id = %s
@@ -648,13 +669,15 @@ def checkout():
                     SET quantity = %s
                     WHERE order_id = %s AND item_id = %s
                 """, (new_quantity, order_id, item_id))
+                print(f"[Checkout] Updated item {item_id} quantity to {new_quantity}")
             else:
                 cursor.execute("""
                     INSERT INTO order_items (order_id, item_id, quantity)
                     VALUES (%s, %s, %s)
                 """, (order_id, item_id, quantity))
+                print(f"[Checkout] Inserted item {item_id} x{quantity}")
 
-        # Recalculate total amount
+        # Recalculate total from DB prices
         cursor.execute("""
             UPDATE orders
             SET total_amount = (
@@ -670,10 +693,12 @@ def checkout():
         cursor.close()
         connection.close()
 
+        print(f"[Checkout] Order {order_id} finalized successfully.")
         return jsonify({'success': True, 'order_id': order_id})
 
     except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
+        print(f"[Checkout Error] {str(e)}")
+        return jsonify({'success': False, 'message': f"Internal server error: {str(e)}"}), 500
     
 @customer.route('/Orders')
 def orders():
@@ -759,23 +784,6 @@ def api_orders():
         cursor.close()
         db.close()
 
-import base64
-
-from flask import Blueprint, request, session, jsonify, url_for
-from werkzeug.utils import secure_filename
-
-
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-
-def allowed_file(filename, file_data):
-    extension = filename.rsplit('.', 1)[-1].lower()
-    file_type = imghdr.what(None, h=file_data)
-    return (
-        '.' in filename and
-        extension in ALLOWED_EXTENSIONS and
-        file_type in ALLOWED_EXTENSIONS
-    )
-
 @customer.route('/api/update_payment', methods=['POST'])
 def update_payment():
     if 'user' not in session:
@@ -787,8 +795,9 @@ def update_payment():
 
     image_bytes = file.read()  # ✅ Only read once
 
-    if not allowed_file(file.filename, image_bytes):  # ✅ Pass both filename and bytes
+    if not allowed_file(file.filename):  # ✅ Only 1 argument
         return jsonify({'error': 'Invalid file type.'}), 400
+
 
     try:
         db = connect_db()
@@ -825,9 +834,6 @@ def update_payment():
         cursor.close()
         db.close()
 
-
-
-        
 @customer.route('/thankyou')
 def thankyou():
     return render_template('thankyou.html')
@@ -836,7 +842,6 @@ def thankyou():
 def myorders():
         return render_template('myorders.html')
     
-import base64
 
 @customer.route('/api/myorders', methods=['GET'])
 def my_orders():
@@ -849,7 +854,7 @@ def my_orders():
     try:
         customer_id = session['user']
 
-        # Get updated customer info
+        # Get user info
         cursor.execute("""
             SELECT user_id, first_name, middle_name, last_name, email, contact, address, user_img
             FROM users
@@ -860,7 +865,13 @@ def my_orders():
         if not cust_row:
             return jsonify({'error': 'Customer not found'}), 404
 
-        full_name = f"{cust_row[1]} {' ' + cust_row[2] if cust_row[2] else ''} {cust_row[3]}".strip()
+        # Prepare full name
+        full_name = f"{cust_row[1]}{' ' + cust_row[2] if cust_row[2] else ''} {cust_row[3]}".strip()
+
+        # Handle base64 image (either bytes or string)
+        user_img = None
+        if cust_row[7]:
+            user_img = base64.b64encode(cust_row[7]).decode('utf-8') if isinstance(cust_row[7], bytes) else cust_row[7]
 
         customer = {
             'id': cust_row[0],
@@ -868,10 +879,10 @@ def my_orders():
             'email': cust_row[4],
             'contact': cust_row[5],
             'address': cust_row[6],
-            'user_img': base64.b64encode(cust_row[7]).decode('utf-8') if cust_row[7] else None
+            'user_img': user_img
         }
 
-        # Get all orders for the customer ordered by latest first
+        # Get all orders
         cursor.execute("""
             SELECT order_id, ordered_at, total_amount, status
             FROM orders
@@ -883,9 +894,10 @@ def my_orders():
         if not order_rows:
             return jsonify({'customer': customer, 'orders': []})
 
-        # Skip the most recent order
+        # Skip most recent order
         orders = []
         for order_id, ordered_at, total_amount, status in order_rows[1:]:
+            # Get order items
             cursor.execute("""
                 SELECT i.item_name, i.price, i.image, oi.quantity
                 FROM order_items oi
@@ -895,17 +907,22 @@ def my_orders():
             item_rows = cursor.fetchall()
 
             items = []
-            for item_name, price, image, quantity in item_rows:
+            for name, price, image, quantity in item_rows:
+                if image:
+                    if isinstance(image, bytes):
+                        image = base64.b64encode(image).decode('utf-8')
+                    # else: image is already base64 string
+
                 items.append({
-                    'name': item_name,
+                    'name': name,
                     'price': float(price),
-                    'image': base64.b64encode(image).decode('utf-8') if image else None,
+                    'image': image,
                     'quantity': quantity
                 })
 
             orders.append({
                 'order_id': order_id,
-                'ordered_at': ordered_at.strftime('%Y-%m-%d %H:%M'),
+                'ordered_at': ordered_at.strftime('%Y-%m-%d %H:%M:%S'),
                 'total_amount': float(total_amount),
                 'status': status,
                 'items': items
@@ -919,6 +936,7 @@ def my_orders():
     finally:
         cursor.close()
         db.close()
+
 
 
 @customer.route('/api/cancel_order', methods=['POST'])
@@ -1054,50 +1072,5 @@ def update_account():
     conn.close()
 
     flash("Account details updated successfully.", "success")
-    return redirect(url_for('customer.account'))
-
-
-from werkzeug.utils import secure_filename
-
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-
-def allowed_file(filename, file_data):
-    extension = filename.rsplit('.', 1)[-1].lower()
-    file_type = imghdr.what(None, h=file_data)
-    return (
-        '.' in filename and
-        extension in ALLOWED_EXTENSIONS and
-        file_type in ALLOWED_EXTENSIONS
-    )
-
-@customer.route('/upload_image', methods=['POST'])
-def upload_image():
-    if 'user' not in session:
-        flash('You must be logged in to upload an image.', 'error')
-        return redirect(url_for('customer.login'))
-
-    file = request.files.get('profile_image')
-    if not file or file.filename == '':
-        flash('No image uploaded.', 'error')
-        return redirect(url_for('customer.account'))
-
-    image_data = file.read()
-
-    if not allowed_file(file.filename, image_data):
-        flash('Invalid file type. Only image files (jpg, jpeg, png, gif) are allowed.', 'error')
-        return redirect(url_for('customer.account'))
-
-    try:
-        conn = connect_db()
-        cursor = conn.cursor()
-        cursor.execute("UPDATE users SET user_img = %s WHERE user_id = %s", (image_data, session['user']))
-        conn.commit()
-        flash('Profile image updated successfully!', 'success')
-    except Exception as e:
-        flash('Error uploading image: ' + str(e), 'error')
-    finally:
-        cursor.close()
-        conn.close()
-
     return redirect(url_for('customer.account'))
 

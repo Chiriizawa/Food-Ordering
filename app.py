@@ -7,7 +7,6 @@ mail = Mail()
 
 app = create_app()
 
-# Allow CORS for all origins (all ports)
 CORS(app, supports_credentials=True)
 
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'

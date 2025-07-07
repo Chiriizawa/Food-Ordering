@@ -10,10 +10,10 @@ admin = Blueprint('admin', __name__, template_folder="template")
 bcrypt = Bcrypt()
 
 db_config = {
-    'host':'10.0.0.34',
+    'host':'192.168.1.4',
     'database':'craveon',
     'user':'root',
-    'password':'ClodAndrei8225'
+    'password':'haharaymund',
 }
 
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif'}

@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', function () {
     emptyOrderMessage.classList.add('text-center', 'text-red-600', 'font-semibold');
     emptyOrderMessage.textContent = 'No Item Found.';
 
-    fetch('/CraveOn/api/orders')
+    fetch('/api/orders')
         .then(response => response.json())
         .then(data => {
             if (data && data.customer) {
@@ -228,7 +228,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const formData = new FormData();
         formData.append('payment_proof', file);
 
-        fetch('/CraveOn/api/update_payment', {
+        fetch('/api/update_payment', {
             method: 'POST',
             body: formData
         })

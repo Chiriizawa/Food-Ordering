@@ -7,7 +7,7 @@ def create_app():
 
     app.secret_key = 'ray' 
 
-    app.register_blueprint(customer, url_prefix='/CraveOn')
+    app.register_blueprint(customer, url_prefix='/')
     app.register_blueprint(admin, url_prefix='/Admin')
 
     return app
