@@ -127,34 +127,38 @@ def logout():
 
 @admin.route('/Manage-User', methods=['GET'])
 def users():
-        return render_template("users.html" )
-    
+    return render_template("users.html")
+
 @admin.route('/api/manage-users', methods=['GET'])
 def api_manage_users():
     if 'admin' not in session:
         return jsonify({"error": "Unauthorized"}), 401
 
+    connection = None
+    cursor = None
     try:
         connection = connect_db()
         cursor = connection.cursor(dictionary=True)
 
-        # Get active users
+        # Fetch active users
         cursor.execute("SELECT * FROM users WHERE is_archived = FALSE")
         active_users = cursor.fetchall()
 
-        # Get archived users
+        # Fetch archived users
         cursor.execute("SELECT * FROM users WHERE is_archived = TRUE")
         archived_users = cursor.fetchall()
 
-        # Convert image to base64 for frontend use
+        # Safely process user images
         for user in active_users + archived_users:
-            if user.get("user_img"):
-                import base64
-                user["user_img"] = base64.b64encode(user["user_img"]).decode('utf-8')
+            user_img = user.get("user_img")
+            if user_img and isinstance(user_img, (bytes, bytearray)):
+                user["user_img"] = base64.b64encode(user_img).decode('utf-8')
+            elif isinstance(user_img, str):
+                user["user_img"] = user_img  # Already base64-encoded
             else:
                 user["user_img"] = None
 
-        # Get completed orders
+        # Fetch completed transactions
         cursor.execute("""
             SELECT 
                 o.order_id,
@@ -168,7 +172,7 @@ def api_manage_users():
         """)
         all_transactions = cursor.fetchall()
 
-        # Get items from orders
+        # Fetch items in those orders
         cursor.execute("""
             SELECT 
                 oi.order_id,
@@ -179,7 +183,7 @@ def api_manage_users():
         """)
         order_items = cursor.fetchall()
 
-        # Group items by order_id
+        # Group items by order ID
         items_by_order = {}
         for item in order_items:
             oid = item["order_id"]
@@ -188,7 +192,7 @@ def api_manage_users():
                 "quantity": item["quantity"]
             })
 
-        # Group transactions by user
+        # Group transactions by user ID
         transactions_by_user = {}
         for txn in all_transactions:
             txn["items"] = items_by_order.get(txn["order_id"], [])
@@ -202,12 +206,12 @@ def api_manage_users():
         })
 
     except Exception as e:
+        print("Error fetching users:", e)
         return jsonify({"error": f"Error fetching users: {str(e)}"}), 500
 
     finally:
-        cursor.close()
-        connection.close()
-
+        if cursor: cursor.close()
+        if connection: connection.close()
 @admin.route('/archive-user/<int:user_id>', methods=['POST'])
 def archive_user(user_id):
     try:
