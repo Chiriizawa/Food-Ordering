@@ -20,10 +20,10 @@ def make_header(response):
     return response
 
 db_config = {
-    'host':'192.168.1.4',
+    'host':'192.168.54.155',
     'database':'craveon',
     'user':'root',
-    'password':'haharaymund',
+    'password':'ClodAndrei8225',
 }
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}

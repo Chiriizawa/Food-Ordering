@@ -18,11 +18,12 @@ body {
 /* Left Side - Green Panel */
 .green-panel {
     flex: 1;
-    background: linear-gradient(-45deg, #898989, #62db90);
+    background: linear-gradient(#898989, #62db90);
     display: flex;
     justify-content: center;
     align-items: center;
-    color: white;
+    color: rgb(64, 33, 33);
+    padding: 2rem;
 }
 
 .panel-content {
@@ -49,10 +50,12 @@ body {
 /* Right Side - Login Form */
 .login-form-container {
     flex: 1;
+    background: linear-gradient(#68c08a, #898989);
     display: flex;
     justify-content: center;
     align-items: center;
     padding: 2rem;
+    border-left: none;
 }
 
 .login-form {
@@ -123,7 +126,7 @@ body {
 
 .login-btn {
     width: 100%;
-    background: #01ff9e;
+    background: #35bd89;
     color: white;
     border: none;
     padding: 1rem;
