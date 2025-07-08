@@ -1,3 +1,7 @@
+python -m venv .venv
+.venv\Scripts\activate
+Set-Executionpolicy Unrestricted -Scope Process
+
 pip install flask
 pip install mysql-connector-python
 pip install Brcypt
