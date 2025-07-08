@@ -73,7 +73,6 @@ def login():
     errors = {}
 
     if request.method == "POST":
-        # Accept both form and JSON for API
         if request.headers.get('Content-Type', '').startswith('application/json') or request.is_json:
             data = request.get_json(force=True)
             email = data.get("email", "").strip()
@@ -82,7 +81,6 @@ def login():
             email = request.form.get("email", "").strip()
             password = request.form.get("password", "").strip()
 
-        # Email validation
         if not email:
             errors['email'] = "Email is required."
         else:

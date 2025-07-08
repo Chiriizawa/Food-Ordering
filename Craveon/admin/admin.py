@@ -3,18 +3,35 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 import mysql.connector
 from flask_bcrypt import Bcrypt
 from werkzeug.utils import secure_filename
-
-
+import datetime
 
 admin = Blueprint('admin', __name__, template_folder="template")
 bcrypt = Bcrypt()
 
-db_config = {
-    'host':'192.168.54.155',
-    'database':'craveon',
-    'user':'root',
-    'password':'ClodAndrei8225',
+# Support multiple database configurations (local and remote)
+DB_CONFIGS = {
+    'local': {
+        'host': '192.168.54.155',
+        'database': 'craveon',
+        'user': 'root',
+        'password': 'ClodAndrei8225',
+    },
+    'flask_connection': {
+        'host': '192.168.54.142',
+        'database': 'hotel_management',
+        'user': 'root',
+        'password': 'admin',
+    }
 }
+
+def get_db_config():
+    # Choose config based on environment variable, session, or other logic
+    # Example: use ?db=flask_connection in query string to select remote DB
+    db_key = request.args.get('db', 'local')
+    return DB_CONFIGS.get(db_key, DB_CONFIGS['local'])
+
+def connect_db():
+    return mysql.connector.connect(**get_db_config())
 
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif'}
 
@@ -26,9 +43,6 @@ def make_header(response):
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '0'
     return response
-
-def connect_db():
-    return mysql.connector.connect(**db_config)
 
 @admin.app_template_filter('b64encode')
 def b64encode_filter(data):
@@ -100,18 +114,8 @@ def login():
             passwordmsg = 'Password is incorrect!'
 
         if not emailmsg and not passwordmsg:
-            try:
-                connection = mysql.connector.connect(**db_config)
-                cursor = connection.cursor()
-                cursor.execute("INSERT INTO admin (admin_username, admin_password) VALUES(%s, %s)", (email, password))
-                connection.commit()
-                session['admin'] = email
-                return redirect(url_for('admin.index'))
-            except mysql.connector.Error as e:
-                msg = f"Adding data failed! Error: {str(e)}"
-            finally:
-                cursor.close()
-                connection.close()
+            session['admin'] = email
+            return redirect(url_for('admin.index'))
         else:
             msg = emailmsg or passwordmsg
 
@@ -656,18 +660,14 @@ def edit_item(item_id):
 
 @admin.route('/Manage-Orders', methods=['GET'])
 def morders():
-        return render_template("morders.html")
-
-@admin.route('/api/morders', methods=['GET'])
-def manage_orders():
-    if 'admin' not in session:
-        return jsonify({'error': 'User not logged in'}), 401
+    # Return the same JSON as /api/morders
+    # if 'admin' not in session:
+    #     return jsonify({'error': 'User not logged in'}), 401
 
     db = connect_db()
     cursor = db.cursor()
 
     try:
-        # Get all orders with customer info (using users table)
         cursor.execute("""
             SELECT o.order_id, o.ordered_at, o.total_amount, o.status, o.payment_ss, o.cancellation_reason,
                    u.user_id, u.first_name, u.middle_name, u.last_name, u.email, u.contact, u.address
@@ -675,18 +675,13 @@ def manage_orders():
             JOIN users u ON o.user_id = u.user_id
             ORDER BY o.ordered_at DESC
         """)
-
         order_rows = cursor.fetchall()
-
         customers_dict = {}
         orders_grouped = {}
-
         for row in order_rows:
             (order_id, ordered_at, total_amount, status, payment_ss, cancel_reason,
              user_id, first_name, middle_name, last_name, email, contact, address) = row
-
             full_name = f"{first_name} {' ' + middle_name if middle_name else ''} {last_name}".strip()
-
             if user_id not in customers_dict:
                 customers_dict[user_id] = {
                     'user_id': user_id,
@@ -696,8 +691,6 @@ def manage_orders():
                     'address': address
                 }
                 orders_grouped[user_id] = []
-
-            # Get items for this order
             cursor.execute("""
                 SELECT i.item_name, i.price, i.image, oi.quantity
                 FROM order_items oi
@@ -705,7 +698,6 @@ def manage_orders():
                 WHERE oi.order_id = %s
             """, (order_id,))
             item_rows = cursor.fetchall()
-
             items = [
                 {
                     'name': item_name,
@@ -715,25 +707,20 @@ def manage_orders():
                 }
                 for item_name, price, image, quantity in item_rows
             ]
-
-            # Handle payment screenshot
             encoded_ss = None
             if payment_ss:
                 if isinstance(payment_ss, str):
-                    # If it's already a base64 string
                     if payment_ss.startswith('data:image'):
                         encoded_ss = payment_ss
                     else:
-                        # If it's a base64 string without data URI
                         encoded_ss = f"data:image/jpeg;base64,{payment_ss}"
                 else:
-                    # If it's binary data
                     try:
                         encoded_ss = f"data:image/jpeg;base64,{base64.b64encode(payment_ss).decode('utf-8')}"
+
                     except Exception as e:
                         print(f"Error encoding payment screenshot: {e}")
                         encoded_ss = None
-
             orders_grouped[user_id].append({
                 'order_id': order_id,
                 'ordered_at': ordered_at.strftime('%Y-%m-%d %H:%M'),
@@ -743,19 +730,15 @@ def manage_orders():
                 'cancellation_reason': cancel_reason or '',
                 'items': items
             })
-
         customers = []
         for user_id, customer in customers_dict.items():
             customers.append({
                 'customer': customer,
                 'orders': orders_grouped[user_id]
             })
-
         return jsonify({'customers': customers})
-
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
     finally:
         cursor.close()
         db.close()
@@ -862,6 +845,24 @@ def cancel_order():
         print(f"Error canceling order: {str(e)}")
         return jsonify({'error': 'An error occurred while canceling the order'}), 500
 
+    finally:
+        cursor.close()
+        db.close()
+
+@admin.route('/test-hotel-users', methods=['GET'])
+def test_hotel_users():
+    db = mysql.connector.connect(**DB_CONFIGS['flask_connection'])
+    cursor = db.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT * FROM bookings WHERE status = %s", ('checked_in',))
+        users = cursor.fetchall()
+        for user in users:
+            for k, v in user.items():
+                if isinstance(v, datetime.timedelta):
+                    user[k] = str(v)
+        return jsonify({'checked_in_users': users})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
     finally:
         cursor.close()
         db.close()
