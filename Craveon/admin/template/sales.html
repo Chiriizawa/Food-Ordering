@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Sales Report</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <h1 class="text-2xl font-bold mb-4">Sales Report</h1>
+
+    <!-- Filters -->
+    <div class="flex flex-wrap gap-4 mb-4">
+        <select id="filter-year" class="border p-2 rounded">
+            <option value="">All Years</option>
+        </select>
+
+        <select id="filter-month" class="border p-2 rounded">
+            <option value="">All Months</option>
+            <option value="1">January</option>
+            <option value="2">February</option>
+            <option value="3">March</option>
+            <option value="4">April</option>
+            <option value="5">May</option>
+            <option value="6">June</option>
+            <option value="7">July</option>
+            <option value="8">August</option>
+            <option value="9">September</option>
+            <option value="10">October</option>
+            <option value="11">November</option>
+            <option value="12">December</option>
+        </select>
+
+        <select id="filter-category" class="border p-2 rounded">
+            <option value="">All Categories</option>
+        </select>
+
+        <select id="filter-item" class="border p-2 rounded">
+            <option value="">All Items</option>
+        </select>
+
+        <button onclick="downloadPDF()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+            Generate Sales to PDF
+        </button>
+    </div>
+
+    <!-- PDF Content -->
+    <div id="pdf-content">
+        <h2 class="text-center text-xl font-bold mb-4 hidden-print" style="display: none;">Crave On Sales Report</h2>
+
+        <table class="min-w-full border divide-y divide-gray-200">
+            <thead class="bg-gray-100">
+                <tr>
+                    <th class="px-4 py-2 text-left">Year</th>
+                    <th class="px-4 py-2 text-left">Month</th>
+                    <th class="px-4 py-2 text-left">Category</th>
+                    <th class="px-4 py-2 text-left">Item</th>
+                    <th class="px-4 py-2 text-left">Total Sales</th>
+                </tr>
+            </thead>
+            <tbody id="sales-body" class="bg-white divide-y divide-gray-200"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+async function loadSales() {
+    const year = document.getElementById('filter-year').value;
+    const month = document.getElementById('filter-month').value;
+    const category = document.getElementById('filter-category').value;
+    const item = document.getElementById('filter-item').value;
+
+    const url = new URL(window.location.origin + '/Admin/api/sales');
+    if (year) url.searchParams.append('year', year);
+    if (month) url.searchParams.append('month', month);
+    if (category) url.searchParams.append('category', category);
+    if (item) url.searchParams.append('item', item);
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    const tbody = document.getElementById('sales-body');
+    tbody.innerHTML = '';
+
+    if (data.sales.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">No sales found.</td></tr>';
+        return;
+    }
+
+    // Populate category and item filters (based on latest results)
+    populateFilter('filter-category', [...new Set(data.sales.map(s => s.category_name))]);
+    populateFilter('filter-item', [...new Set(data.sales.map(s => s.item_name))]);
+
+    data.sales.forEach(sale => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="px-4 py-2">${sale.year}</td>
+            <td class="px-4 py-2">${sale.month}</td>
+            <td class="px-4 py-2">${sale.category_name}</td>
+            <td class="px-4 py-2">${sale.item_name}</td>
+            <td class="px-4 py-2">₱${parseFloat(sale.total).toFixed(2)}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function populateFilter(id, values) {
+    const select = document.getElementById(id);
+    const current = select.value;
+    select.innerHTML = `<option value="">All ${id.split('-')[1].replace(/^\w/, c => c.toUpperCase())}s</option>`;
+    values.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v;
+        opt.textContent = v;
+        if (v === current) opt.selected = true;
+        select.appendChild(opt);
+    });
+}
+
+async function loadYears() {
+    const res = await fetch('/Admin/api/sales');
+    const data = await res.json();
+    const years = [...new Set(data.sales.map(s => s.year))];
+    const select = document.getElementById('filter-year');
+    years.forEach(year => {
+        const opt = document.createElement('option');
+        opt.value = year;
+        opt.textContent = year;
+        select.appendChild(opt);
+    });
+}
+
+function downloadPDF() {
+    const title = document.querySelector('#pdf-content h2');
+    title.style.display = 'block';
+
+    const element = document.getElementById('pdf-content');
+    const opt = {
+        margin: 0.5,
+        filename: `Sales_Report_${new Date().toISOString().slice(0, 10)}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(element).save().then(() => {
+        title.style.display = 'none';
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadYears();
+    loadSales();
+
+    ['filter-year', 'filter-month', 'filter-category', 'filter-item'].forEach(id => {
+        document.getElementById(id).addEventListener('change', loadSales);
+    });
+});
+</script>
+{% endblock %}

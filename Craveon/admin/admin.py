@@ -893,4 +893,88 @@ def test_hotel_users():
 def test_hotel_users_ui():
     # Always render the template, let the template handle empty state
     return render_template('test.html', checked_in_users=None, error=None)
-     
+
+@admin.route('/sales')
+def sales():
+    return render_template('sales.html')
+
+from collections import defaultdict
+from decimal import Decimal
+
+@admin.route('/api/sales', methods=['GET'])
+def get_sales_data():
+    year = request.args.get('year')
+    month = request.args.get('month')
+    item = request.args.get('item')
+    category = request.args.get('category')
+
+    conn = connect_db()
+    cursor = conn.cursor(dictionary=True)
+
+    query = """
+        SELECT 
+            o.ordered_at,
+            oi.quantity,
+            i.price,
+            i.item_name,
+            c.category_name
+        FROM orders o
+        JOIN order_items oi ON o.order_id = oi.order_id
+        JOIN items i ON oi.item_id = i.item_id
+        JOIN categories c ON i.category_id = c.category_id
+        WHERE o.status = 'Completed'
+    """
+
+    values = []
+    if year:
+        query += " AND YEAR(o.ordered_at) = %s"
+        values.append(year)
+    if month:
+        query += " AND MONTH(o.ordered_at) = %s"
+        values.append(month)
+    if item:
+        query += " AND i.item_name = %s"
+        values.append(item)
+    if category:
+        query += " AND c.category_name = %s"
+        values.append(category)
+
+    query += " ORDER BY o.ordered_at DESC"
+    cursor.execute(query, tuple(values))
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    # Aggregate results
+    from collections import defaultdict
+    from decimal import Decimal
+
+    sales_data = defaultdict(lambda: defaultdict(lambda: {"total": Decimal("0.00"), "category": ""}))
+    month_names = {}
+
+    for row in rows:
+        ordered_at = row['ordered_at']
+        item_name = row['item_name']
+        quantity = row['quantity']
+        price = row['price']
+        category_name = row['category_name']
+        total = quantity * price
+
+        year_month = (ordered_at.year, ordered_at.month)
+        sales_data[year_month][item_name]["total"] += total
+        sales_data[year_month][item_name]["category"] = category_name
+        month_names[ordered_at.month] = ordered_at.strftime('%B')
+
+    result = []
+    for (y, m), items in sorted(sales_data.items(), reverse=True):
+        for item_name, data in items.items():
+            result.append({
+                'year': y,
+                'month_number': m,
+                'month': month_names[m],
+                'item_name': item_name,
+                'category_name': data["category"],
+                'total': float(data["total"])
+            })
+
+    return jsonify({'sales': result})
