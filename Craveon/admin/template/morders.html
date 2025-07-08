@@ -228,7 +228,7 @@ const ordersPerPage = 10;
 
 // Load all orders from backend API
 function loadOrders() {
-    fetch(`/Admin/api/morders`)
+    fetch(`/Admin/Manage-Orders`)
         .then(response => response.json())
         .then(data => {
             const tableBody = document.getElementById('orders-table-body');

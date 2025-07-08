@@ -11,7 +11,7 @@ bcrypt = Bcrypt()
 # Support multiple database configurations (local and remote)
 DB_CONFIGS = {
     'local': {
-        'host': '192.168.54.155',
+        'host': '10.0.30.32',
         'database': 'craveon',
         'user': 'root',
         'password': 'ClodAndrei8225',
@@ -138,7 +138,7 @@ def api_manage_users():
     if 'admin' not in session:
         return jsonify({"error": "Unauthorized"}), 401
 
-    connection = None
+    connection = None   
     cursor = None
     try:
         connection = connect_db()
@@ -660,88 +660,9 @@ def edit_item(item_id):
 
 @admin.route('/Manage-Orders', methods=['GET'])
 def morders():
-    # Return the same JSON as /api/morders
-    # if 'admin' not in session:
-    #     return jsonify({'error': 'User not logged in'}), 401
-
-    db = connect_db()
-    cursor = db.cursor()
-
-    try:
-        cursor.execute("""
-            SELECT o.order_id, o.ordered_at, o.total_amount, o.status, o.payment_ss, o.cancellation_reason,
-                   u.user_id, u.first_name, u.middle_name, u.last_name, u.email, u.contact, u.address
-            FROM orders o
-            JOIN users u ON o.user_id = u.user_id
-            ORDER BY o.ordered_at DESC
-        """)
-        order_rows = cursor.fetchall()
-        customers_dict = {}
-        orders_grouped = {}
-        for row in order_rows:
-            (order_id, ordered_at, total_amount, status, payment_ss, cancel_reason,
-             user_id, first_name, middle_name, last_name, email, contact, address) = row
-            full_name = f"{first_name} {' ' + middle_name if middle_name else ''} {last_name}".strip()
-            if user_id not in customers_dict:
-                customers_dict[user_id] = {
-                    'user_id': user_id,
-                    'full_name': full_name,
-                    'email': email,
-                    'contact': contact,
-                    'address': address
-                }
-                orders_grouped[user_id] = []
-            cursor.execute("""
-                SELECT i.item_name, i.price, i.image, oi.quantity
-                FROM order_items oi
-                JOIN items i ON oi.item_id = i.item_id
-                WHERE oi.order_id = %s
-            """, (order_id,))
-            item_rows = cursor.fetchall()
-            items = [
-                {
-                    'name': item_name,
-                    'price': float(price),
-                    'image': base64.b64encode(image).decode('utf-8') if image else None,
-                    'quantity': quantity
-                }
-                for item_name, price, image, quantity in item_rows
-            ]
-            encoded_ss = None
-            if payment_ss:
-                if isinstance(payment_ss, str):
-                    if payment_ss.startswith('data:image'):
-                        encoded_ss = payment_ss
-                    else:
-                        encoded_ss = f"data:image/jpeg;base64,{payment_ss}"
-                else:
-                    try:
-                        encoded_ss = f"data:image/jpeg;base64,{base64.b64encode(payment_ss).decode('utf-8')}"
-
-                    except Exception as e:
-                        print(f"Error encoding payment screenshot: {e}")
-                        encoded_ss = None
-            orders_grouped[user_id].append({
-                'order_id': order_id,
-                'ordered_at': ordered_at.strftime('%Y-%m-%d %H:%M'),
-                'total_amount': float(total_amount or 0.0),
-                'status': status,
-                'payment_ss': encoded_ss,
-                'cancellation_reason': cancel_reason or '',
-                'items': items
-            })
-        customers = []
-        for user_id, customer in customers_dict.items():
-            customers.append({
-                'customer': customer,
-                'orders': orders_grouped[user_id]
-            })
-        return jsonify({'customers': customers})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-    finally:
-        cursor.close()
-        db.close()
+    if 'admin' not in session:
+        return redirect(url_for('admin.login'))
+    return render_template('morders.html')
 
 @admin.route('/api/processing_order', methods=['POST'])
 def processing_order():
@@ -849,6 +770,8 @@ def cancel_order():
         cursor.close()
         db.close()
 
+
+
 @admin.route('/test-hotel-users', methods=['GET'])
 def test_hotel_users():
     db = mysql.connector.connect(**DB_CONFIGS['flask_connection'])
@@ -860,9 +783,36 @@ def test_hotel_users():
             for k, v in user.items():
                 if isinstance(v, datetime.timedelta):
                     user[k] = str(v)
+                # Handle image fields for both JSON and HTML
+                if 'img' in k.lower() or 'photo' in k.lower() or 'avatar' in k.lower() or 'image' in k.lower():
+                    if v:
+                        if isinstance(v, (bytes, bytearray)):
+                            user[k] = 'data:image/jpeg;base64,' + base64.b64encode(v).decode('utf-8')
+                        elif isinstance(v, str) and (v.startswith('http://') or v.startswith('https://')):
+                            user[k] = v
+                        elif isinstance(v, str):
+                            # Assume Cloudinary public ID or versioned path
+                            if v.startswith('v') and '/' in v:
+                                user[k] = f"https://res.cloudinary.com/ddjp3phzz/image/upload/{v}"
+                            else:
+                                user[k] = f"https://res.cloudinary.com/ddjp3phzz/image/upload/{v}.jpg"
+                    else:
+                        user[k] = None
+        # If HTML requested, render template
+        if request.args.get('format') == 'html' or 'text/html' in request.headers.get('Accept', ''):
+            return render_template('test.html', checked_in_users=users, error=None)
+        # Otherwise, return JSON
         return jsonify({'checked_in_users': users})
     except Exception as e:
+        if request.args.get('format') == 'html' or 'text/html' in request.headers.get('Accept', ''):
+            return render_template('test.html', checked_in_users=[], error=str(e))
         return jsonify({'error': str(e)}), 500
     finally:
         cursor.close()
         db.close()
+
+@admin.route('/test-hotel-users-ui', methods=['GET'])
+def test_hotel_users_ui():
+    # Always render the template, let the template handle empty state
+    return render_template('test.html', checked_in_users=None, error=None)
+     

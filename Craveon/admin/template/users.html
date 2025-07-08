@@ -219,4 +219,51 @@ function getUserModal(user, txnRows, modalId, archived) {
     </div>`;
 }
 </script>
+
+<div class="container mt-4">
+    <h2 class="text-center mb-4">Test Hotel Users API - Checked-in Users</h2>
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered align-middle" id="hotelUsersTable">
+            <thead class="table-dark">
+                <tr id="hotelUsersHeader">
+                    <!-- Headers will be inserted here -->
+                </tr>
+            </thead>
+            <tbody id="hotelUsersBody">
+                <!-- Data will be inserted here -->
+            </tbody>
+        </table>
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    fetch('/Admin/test-hotel-users')
+        .then(res => res.json())
+        .then(data => {
+            const users = data.checked_in_users || [];
+            const headerRow = document.getElementById('hotelUsersHeader');
+            const body = document.getElementById('hotelUsersBody');
+            if (!users.length) {
+                body.innerHTML = `<tr><td colspan="100" class="text-center text-muted">No checked-in users found.</td></tr>`;
+                return;
+            }
+            // Build headers
+            headerRow.innerHTML = Object.keys(users[0]).map(key => `<th>${key}</th>`).join('');
+            // Build rows
+            body.innerHTML = users.map(user => {
+                return `<tr>` + Object.entries(user).map(([key, val]) => {
+                    const isImage = ['img','photo','avatar','image','proof'].some(word => key.toLowerCase().includes(word));
+                    if (isImage && val && (val.startsWith('http://') || val.startsWith('https://') || val.startsWith('data:image/'))) {
+                        return `<td><img src="${val}" alt="img" style="max-width:60px;max-height:60px;object-fit:cover;" onerror="this.onerror=null;this.src='https://res.cloudinary.com/demo/image/upload/sample.jpg';" title="User image" /></td>`;
+                    } else {
+                        return `<td>${val === null ? '' : val}</td>`;
+                    }
+                }).join('') + `</tr>`;
+            }).join('');
+        })
+        .catch(err => {
+            document.getElementById('hotelUsersBody').innerHTML = `<tr><td colspan="100" class="text-danger">Error: ${err}</td></tr>`;
+        });
+});
+</script>
 {% endblock %}

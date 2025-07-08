@@ -20,7 +20,7 @@ def make_header(response):
     return response
 
 db_config = {
-    'host':'192.168.54.155',
+    'host':'10.0.30.32',
     'database':'craveon',
     'user':'root',
     'password':'ClodAndrei8225',

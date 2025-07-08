@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Test Hotel Users API</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 2rem;
+        }
+
+        #result {
+            margin-top: 2rem;
+        }
+
+        pre {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 5px;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        .badge {
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Test /test-hotel-users API</h2>
+    <div class="mb-3 d-flex gap-2 align-items-center">
+        <button id="fetchBtn" class="btn btn-primary">Fetch Checked-in Users</button>
+        <button id="clearBtn" class="btn btn-outline-secondary">Clear Results</button>
+    </div>
+    <div id="result"></div>
+    <script>
+        function escapeHtml(text) {
+            return text ? text.replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] || c;
+            }) : '';
+        }
+        function isImageField(key) {
+            key = key.toLowerCase();
+            return key.includes('img') || key.includes('photo') || key.includes('avatar') || key.includes('image') || key.includes('proof');
+        }
+        function isValidImgUrl(val) {
+            if (!val) return false;
+            if (typeof val !== 'string') return false;
+            // Accept http(s) and data URLs
+            return val.startsWith('http://') || val.startsWith('https://') || val.startsWith('data:image/');
+        }
+        document.getElementById('fetchBtn').onclick = function () {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="spinner-border" role="status"></div> Loading...';
+            fetch('/Admin/test-hotel-users')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.checked_in_users && data.checked_in_users.length > 0) {
+                        let table = '<div class="table-responsive"><table class="table table-bordered table-striped table-hover align-middle"><thead class="table-light"><tr>';
+                        Object.keys(data.checked_in_users[0]).forEach(key => {
+                            table += `<th>${escapeHtml(key)}</th>`;
+                        });
+                        table += '</tr></thead><tbody>';
+                        data.checked_in_users.forEach(user => {
+                            table += '<tr>';
+                            Object.entries(user).forEach(([key, val]) => {
+                                if (isImageField(key)) {
+                                    if (isValidImgUrl(val)) {
+                                        table += `<td><img src="${val}" alt="img" style="max-width:60px;max-height:60px;object-fit:cover;" onerror="this.onerror=null;this.src='https://res.cloudinary.com/demo/image/upload/sample.jpg';" title="User image" /></td>`;
+                                    } else {
+                                        table += `<td><span class='badge bg-secondary'>No Image</span></td>`;
+                                    }
+                                } else {
+                                    table += `<td>${val === null ? '' : escapeHtml(val + '')}</td>`;
+                                }
+                            });
+                            table += '</tr>';
+                        });
+                        table += '</tbody></table></div>';
+                        resultDiv.innerHTML = table;
+                    } else if (data.checked_in_users) {
+                        resultDiv.innerHTML = '<div class="alert alert-warning">No checked-in users found.</div>';
+                    } else if (data.error) {
+                        resultDiv.innerHTML = `<div class="alert alert-danger">Error: ${escapeHtml(data.error + '')}</div>`;
+                    } else {
+                        resultDiv.innerHTML = '<pre>' + escapeHtml(JSON.stringify(data, null, 2)) + '</pre>';
+                    }
+                })
+                .catch(err => {
+                    resultDiv.innerHTML = `<div class="alert alert-danger">Fetch error: ${err}</div>`;
+                });
+        };
+        document.getElementById('clearBtn').onclick = function () {
+            document.getElementById('result').innerHTML = '';
+        };
+    </script>
+</body>
+
+</html>
