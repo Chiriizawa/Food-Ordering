@@ -11,10 +11,10 @@ bcrypt = Bcrypt()
 # Support multiple database configurations (local and remote)
 DB_CONFIGS = {
     'local': {
-        'host': '10.0.30.32',
+        'host': '192.168.1.4',
         'database': 'craveon',
         'user': 'root',
-        'password': 'ClodAndrei8225',
+        'password': 'haharaymund',
     },
     'flask_connection': {
         'host': '192.168.54.142',
@@ -660,10 +660,88 @@ def edit_item(item_id):
 
 @admin.route('/Manage-Orders', methods=['GET'])
 def morders():
-    if 'admin' not in session:
-        return redirect(url_for('admin.login'))
-    return render_template('morders.html')
+        return render_template("morders.html")
 
+@admin.route('/morders', methods=['GET'])
+def manage_orders():
+    if 'admin' not in session:  # Ensure admin session key is checked
+        return jsonify({'error': 'Admin not logged in'}), 401
+
+    db = connect_db()
+    cursor = db.cursor(dictionary=True)
+
+    try:
+        # Fetch all orders with user info
+        cursor.execute("""
+            SELECT o.order_id, o.ordered_at, o.total_amount, o.status, o.payment_ss, o.cancellation_reason,
+                   u.user_id, u.first_name, u.middle_name, u.last_name, u.email, u.contact, u.address
+            FROM orders o
+            JOIN users u ON o.user_id = u.user_id
+            ORDER BY o.ordered_at DESC
+        """)
+        order_rows = cursor.fetchall()
+
+        users_dict = {}
+        orders_grouped = {}
+
+        for row in order_rows:
+            user_id = row['user_id']
+            full_name = f"{row['first_name']} {row['middle_name'] + ' ' if row['middle_name'] else ''}{row['last_name']}".strip()
+
+            if user_id not in users_dict:
+                users_dict[user_id] = {
+                    'customer_id': user_id,
+                    'full_name': full_name,
+                    'email': row['email'],
+                    'contact': row['contact'],
+                    'address': row['address']
+                }
+                orders_grouped[user_id] = []
+
+            # Fetch order items
+            cursor.execute("""
+                SELECT i.item_name, i.price, i.image, oi.quantity
+                FROM order_items oi
+                JOIN items i ON oi.item_id = i.item_id
+                WHERE oi.order_id = %s
+            """, (row['order_id'],))
+            item_rows = cursor.fetchall()
+
+            items = [{
+                'name': item['item_name'],
+                'price': float(item['price']),
+                'image': base64.b64encode(item['image']).decode('utf-8') if item['image'] else None,
+                'quantity': item['quantity']
+            } for item in item_rows]
+
+            orders_grouped[user_id].append({
+                'order_id': row['order_id'],
+                'ordered_at': row['ordered_at'].strftime('%Y-%m-%d %H:%M'),
+                'total_amount': float(row['total_amount']),
+                'status': row['status'],
+                'payment_ss': row['payment_ss'] if row['payment_ss'] else None,
+                'cancellation_reason': row['cancellation_reason'],
+                'items': items
+            })
+
+        customers = []
+        for uid, user_data in users_dict.items():
+            customers.append({
+                'customer': user_data,
+                'orders': orders_grouped[uid]
+            })
+
+        return jsonify({'customers': customers})  # ✅ matches JS
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+    finally:
+        cursor.close()
+        db.close()
+
+
+        
 @admin.route('/api/processing_order', methods=['POST'])
 def processing_order():
     if 'admin' not in session:
