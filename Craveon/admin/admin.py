@@ -763,7 +763,7 @@ def manage_orders():
 
     db = connect_db()
     cursor = db.cursor(dictionary=True)
-
+    
     try:
         # Only fetch orders with payment screenshot submitted
         cursor.execute("""

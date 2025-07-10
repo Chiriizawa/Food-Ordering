@@ -577,13 +577,8 @@ def signup():
 
     return render_template("signup.html", errors={})
 
-@customer.route('/Menu', methods=['GET'])
-def menu():
-    if 'user' not in session:
-        if request.headers.get('Accept') == 'application/json':
-            return jsonify({'success': False, 'message': 'Not logged in'}), 401
-        return redirect(url_for('customer.login'))
-    
+@customer.route('/api/menu', methods=['GET'])
+def api_menu():
     connection = connect_db()
     cursor = connection.cursor()
 
@@ -617,13 +612,70 @@ def menu():
             "category_name": category_name
         })
 
+    return jsonify({
+        'data': json_data
+    }), 200
+
+@customer.route('/Menu', methods=['GET'])
+def menu():
+    print("---- /Menu endpoint called ----")
+    print("Session:", dict(session))
+    print("Request headers:", dict(request.headers))
+    print("Request args (query params):", dict(request.args))
+
+    if 'user' not in session:
+        if request.headers.get('Accept') == 'application/json':
+            print("Not logged in: returning JSON error")
+            return jsonify({'success': False, 'message': 'Not logged in'}), 401
+        print("Not logged in: redirecting to login")
+        return redirect(url_for('customer.login'))
+    
+    connection = connect_db()
+    cursor = connection.cursor()
+
+    # Fetch items with category name
+    cursor.execute("""
+        SELECT i.item_id, i.item_name, i.price, i.image, c.category_name 
+        FROM items i
+        JOIN categories c ON i.category_id = c.category_id
+    """)
+    items = cursor.fetchall()
+    print("Fetched items:", items)
+
+    # Fetch categories
+    cursor.execute("SELECT category_id, category_name FROM categories")
+    categories = cursor.fetchall()
+    print("Fetched categories:", categories)
+    connection.close()
+
+    # Prepare JSON response data
+    json_data = {
+        "items": [],
+        "categories": [{"category_id": c[0], "category_name": c[1]} for c in categories]
+    }
+
+    # Format items
+    for item in items:
+        item_id, name, price, img, category_name = item
+        json_data["items"].append({
+            "item_id": item_id,
+            "name": name,
+            "price": float(price),
+            "image": base64.b64encode(img).decode('utf-8') if img else None,
+            "category_name": category_name
+        })
+
+    print("Prepared JSON data:", json_data)
+
     # Check if client accepts JSON
     if 'application/json' in request.headers.get('Accept', ''):
-        return jsonify(json_data)
+        print("Returning JSON response")
+        return jsonify({
+            'data': json_data
+        })
     
-    # Default to HTML rendering
+    print("Rendering menu.html")
     return render_template('menu.html', items=json_data["items"], categories=json_data["categories"])
-
 @customer.route('/buy-now', methods=['POST'])
 def buy_now():
     if 'user' not in session:
@@ -702,11 +754,54 @@ def buy_now():
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
     
+
+@customer.route('/api/checkout', methods=['POST'])
+def api_checkout():
+    try:
+        data = request.get_json()
+        hotel_guest_info = data.get('hotel_guest_info')
+
+        if hotel_guest_info and hotel_guest_info.get('is_hotel_order'):
+            items = data.get('items', [])
+            if not items:
+                return jsonify({'success': False, 'message': 'Cart is empty'}), 400
+
+            try:
+                conn = connect_db()
+                cursor = conn.cursor()
+
+                total_amount = sum(float(item['price']) * int(item['quantity']) for item in items)
+
+                hotel_guest_id = f"hotel_guest_{hotel_guest_info['booking_id']}"
+
+                cursor.execute("""
+                    INSERT INTO orders (user_id, total_amount, status)
+                    VALUES (%s, %s, 'pending')
+                    """, (hotel_guest_id, total_amount))
+                
+                order_id = cursor.lastrowid
+                for item in items:
+                    cursor.execute("""
+                        INSERT INTO order_items (order_id, item_id, quantity)
+                        VALUES (%s, %s, %s)
+                    """, (order_id, item['item_id'], item['quantity']))
+                conn.commit()
+                cursor.close()
+                conn.close()
+
+                return jsonify({
+                    "success": True,
+                    "message": "Order placed successfully",
+                    "order_id": order_id,
+                    "hotel_guest_info": hotel_guest_info
+                }), 200
+            except Exception as e:
+                return jsonify({'success': False, 'message': str(e)}), 500
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @customer.route('/checkout', methods=['POST'])
 def checkout():
-    if 'user' not in session:
-        return jsonify({'success': False, 'message': 'Not logged in'}), 401
-
     try:
         items = request.json.get('items', [])
         if not items:
