@@ -4,7 +4,141 @@
 <title>Crave On - Admin</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+
+
+
+
+<style>
+    body {
+        background-color: #0d1117;
+        color: #e0e0e0;
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    h2, h4 {
+        color: #00ffff;
+        text-shadow: 0 0 5px #00ffff;
+    }
+
+    .card {
+        background: linear-gradient(to right, #111827, #1a1f2e);
+        border: none;
+        box-shadow: 0 0 15px rgba(0, 255, 255, 0.15);
+        color: #e0e0e0;
+    }
+
+    .form-label {
+        color: #00ffff;
+    }
+
+    .form-control,
+    .form-select {
+        background-color: #0f172a;
+        color: #00ffff;
+        border: 1px solid #00ffff;
+        border-radius: 8px;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        background-color: #0f172a;
+        color: #00ffff;
+        box-shadow: 0 0 10px #00ffff;
+        border-color: #00ffff;
+    }
+
+    .btn-primary {
+        background-color: #00ffff;
+        border: none;
+        color: #000;
+        font-weight: bold;
+        box-shadow: 0 0 10px #00ffff;
+    }
+
+    .btn-primary:hover {
+        background-color: #00e6e6;
+    }
+
+    .btn-warning,
+    .btn-danger,
+    .btn-success,
+    .btn-secondary {
+        border: none;
+        font-weight: bold;
+    }
+
+    .btn-warning {
+        background-color: #facc15;
+        color: #000;
+    }
+
+    .btn-danger {
+        background-color: #ef4444;
+        color: #fff;
+    }
+
+    .btn-success {
+        background-color: #22c55e;
+        color: #fff;
+    }
+
+    .btn-secondary {
+        background-color: #6b7280;
+        color: #fff;
+    }
+
+    .table {
+        background-color: #0f172a;
+        color: #00ffff;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .table thead {
+        background-color: #111827;
+        color: #00ffff;
+    }
+
+    .table td,
+    .table th {
+        vertical-align: middle;
+    }
+
+    .table-striped tbody tr:nth-of-type(odd) {
+        background-color: rgba(0, 255, 255, 0.03);
+    }
+
+    .input-group-text {
+        background-color: #0f172a;
+        border: 1px solid #00ffff;
+        color: #00ffff;
+    }
+
+    .form-control::placeholder {
+        color: #00ffff88;
+    }
+
+   
+
+    .modal-content {
+        background-color: #1f2937;
+        color: #00ffff;
+        border: 1px solid #00ffff50;
+        box-shadow: 0 0 10px #00ffff40;
+    }
+
+    .alert {
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 255, 255, 0.15);
+    }
+
+</style>
+
 {% endblock %}
+
+
+
+
 
 {% block content %}
 <h2 class="text-center mb-4">Manage Items</h2>

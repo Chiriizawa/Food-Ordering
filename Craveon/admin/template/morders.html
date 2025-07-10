@@ -176,8 +176,8 @@
                 <div class="bg-gray-50 p-4 rounded-lg">
                     <h3 class="font-medium text-gray-900 mb-2">Order Actions</h3>
                     <div class="space-y-2">
-                        <button id="accept-order-button" class="w-full py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition">Accept Order</button>
                         <button id="processing-order-button" class="w-full py-2 processing-btn text-white rounded-md hover:bg-orange-600 transition">Mark as Processing</button>
+                        <button id="accept-order-button" class="w-full py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition">Complete Order</button>
                         <button id="cancel-order-button" class="w-full py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition">Cancel Order</button>
                     </div>
                 </div>
@@ -295,10 +295,6 @@ function displayOrdersForPage(page) {
             case 'Processing':
                 statusClass = 'status-processing';
                 statusText = 'Processing';
-                break;
-            case 'Accepted':
-                statusClass = 'status-accepted';
-                statusText = 'Accepted';
                 break;
             case 'Completed':
                 statusClass = 'status-completed';
@@ -522,7 +518,10 @@ function showOrderModal(order) {
 
     switch(order.status) {
         case 'Pending':
-            // All buttons enabled for pending orders
+            // Disable the "Complete Order" button for pending orders
+            acceptBtn.classList.add('disabled-btn', 'opacity-50', 'cursor-not-allowed');
+            acceptBtn.disabled = true;
+            // But enable the processing and cancel buttons
             break;
         case 'Accepted':
             // Disable accept button if already accepted
@@ -530,9 +529,10 @@ function showOrderModal(order) {
             acceptBtn.disabled = true;
             break;
         case 'Processing':
-            // Disable processing button if already processing
+            // Disable the processing button and enable the complete button
             processingBtn.classList.add('disabled-btn', 'opacity-50', 'cursor-not-allowed');
             processingBtn.disabled = true;
+            // The complete button (accept-order-button) should be enabled by default, so we do nothing to it.
             break;
         case 'Completed':
             // Disable all action buttons for completed orders

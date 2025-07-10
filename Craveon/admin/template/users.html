@@ -5,7 +5,125 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+
 <style>
+    body {
+        background-color: #0d1117;
+        color: #00ffff;
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    h2, h4, h5, h6 {
+        color: #00ffff;
+    }
+
+    .table {
+        background-color: #0f172a;
+        color: #00ffff;
+    }
+
+    .table thead {
+        background-color: #1a1f2e;
+        color: #00ffff;
+    }
+
+    .table th, .table td {
+        border-color: #00ffff33;
+    }
+
+    .badge.bg-success {
+        background-color: #00ffcc !important;
+        color: #000;
+    }
+
+    .badge.bg-secondary {
+        background-color: #6c757d !important;
+    }
+
+    .btn-info {
+        background-color: #00bcd4;
+        border: none;
+        color: #000;
+        box-shadow: 0 0 6px rgba(0, 255, 255, 0.3);
+    }
+
+    .btn-info:hover {
+        background-color: #00acc1;
+    }
+
+    .btn-danger {
+        background-color: #f87171;
+        border: none;
+        color: #fff;
+    }
+
+    .btn-success {
+        background-color: #34d399;
+        border: none;
+        color: #000;
+    }
+
+    .btn-secondary {
+        background-color: #64748b;
+        border: none;
+        color: #fff;
+    }
+
+    .btn {
+        font-weight: bold;
+        transition: 0.3s ease;
+        border-radius: 6px;
+    }
+
+    .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 0 10px rgba(0, 255, 255, 0.4);
+    }
+
+    .modal-content {
+        background-color: #1e293b;
+        color: #00ffff;
+        border: 1px solid #00ffff33;
+        box-shadow: 0 0 12px rgba(0, 255, 255, 0.1);
+    }
+
+    .modal-header {
+        background-color: #00ffff;
+        color: #000;
+        border-bottom: 1px solid #00ffff55;
+    }
+
+    .modal-footer {
+        border-top: 1px solid #00ffff55;
+    }
+
+    .profile-img {
+        border: 3px solid #00ffff;
+        box-shadow: 0 0 8px #00ffff88;
+    }
+
+    .table-striped > tbody > tr:nth-of-type(odd) {
+        background-color: #0f172a;
+    }
+
+    .table-striped > tbody > tr:nth-of-type(even) {
+        background-color: #111827;
+    }
+
+    .table-responsive {
+        box-shadow: 0 0 20px rgba(0, 255, 255, 0.08);
+        border-radius: 8px;
+    }
+
+    .text-muted {
+        color: #7dd3fc !important;
+    }
+
+    .table-secondary {
+        background-color: #334155 !important;
+        color: #7fffd4 !important;
+    }
+
     .small-list li {
         font-size: 0.85rem;
     }

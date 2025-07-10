@@ -4,6 +4,7 @@ import mysql.connector
 from flask_bcrypt import Bcrypt
 from werkzeug.utils import secure_filename
 import datetime
+import requests
 
 admin = Blueprint('admin', __name__, template_folder="template")
 bcrypt = Bcrypt()
@@ -11,13 +12,13 @@ bcrypt = Bcrypt()
 # Support multiple database configurations (local and remote)
 DB_CONFIGS = {
     'local': {
-        'host': '192.168.1.4',
+        'host': '192.168.1.68',
         'database': 'craveon',
         'user': 'root',
-        'password': 'haharaymund',
+        'password': 'ClodAndrei8225',
     },
     'flask_connection': {
-        'host': '192.168.54.142',
+        'host': '192.168.1.65',
         'database': 'hotel_management',
         'user': 'root',
         'password': 'admin',
@@ -356,9 +357,102 @@ def unarchive_category(category_id):
     session['message'] = "Category unarchived successfully."
     return redirect(url_for('admin.categories'))
 
+@admin.route('/api/Manage-Item', methods=['GET'])
+def manage_items():
+    try:
+        connection = connect_db()
+        cursor = connection.cursor(dictionary=True)
+
+        # Fetch active items
+        cursor.execute("""
+            SELECT items.item_id, items.item_name, items.price, items.image, items.category_id, categories.category_name
+            FROM items
+            LEFT JOIN categories ON items.category_id = categories.category_id
+            WHERE items.is_archived = FALSE
+        """)
+        active_items = cursor.fetchall()
+
+        # Fetch archived items
+        cursor.execute("""
+            SELECT items.item_id, items.item_name, items.price, items.image, items.category_id, categories.category_name
+            FROM items
+            LEFT JOIN categories ON items.category_id = categories.category_id
+            WHERE items.is_archived = TRUE
+        """)
+        archived_items = cursor.fetchall()
+
+        def process_items(raw_items):
+            result = []
+            for item in raw_items:
+                item_id, item_name, price, image_data, category_id, category_name = item.values()
+                image_base64 = base64.b64encode(image_data).decode('utf-8') if image_data else None
+                result.append({
+                    'item_id': item_id,
+                    'item_name': item_name,
+                    'price': float(price),
+                    'image': image_base64,
+                    'category_id': category_id,
+                    'category_name': category_name or "Uncategorized"
+                })
+            return result
+        return jsonify({
+            'data': {
+                'active_items': process_items(active_items),
+                'archived_items': process_items(archived_items)
+            }
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+@admin.route('/api/Manage-Item', methods=['GET'])
+def api_manage_item():
+    try:
+        connection = connect_db()
+        cursor = connection.cursor(dictionary=True)
+
+        # Fetch active items
+        cursor.execute("""
+            SELECT items.item_id, items.item_name, items.price, items.image, items.category_id, categories.category_name
+            FROM items
+            LEFT JOIN categories ON items.category_id = categories.category_id
+            WHERE items.is_archived = FALSE
+        """)
+        active_items = cursor.fetchall()
+
+        # Fetch archived items
+        cursor.execute("""
+            SELECT items.item_id, items.item_name, items.price, items.image, items.category_id, categories.category_name
+            FROM items
+            LEFT JOIN categories ON items.category_id = categories.category_id
+            WHERE items.is_archived = TRUE
+        """)
+        archived_items = cursor.fetchall()
+
+        def process_items(raw_items):
+            result = []
+            for item in raw_items:
+                item_id, item_name, price, image_data, category_id, category_name = item.values()
+                image_base64 = base64.b64encode(image_data).decode('utf-8') if image_data else None
+                result.append({
+                    'item_id': item_id,
+                    'item_name': item_name,
+                    'price': float(price),
+                    'image': image_base64,
+                    'category_id': category_id,
+                    'category_name': category_name or "Uncategorized"
+                })
+            return result
+        return jsonify({
+            'data': {
+                'active_items': process_items(active_items),
+                'archived_items': process_items(archived_items)
+            }
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @admin.route('/Manage-Item', methods=['GET', 'POST'])
 def manageitem():
-    # If request is for JSON (API), skip login check
     if request.headers.get('Accept') == 'application/json':
         try:
             connection = connect_db()
@@ -664,19 +758,20 @@ def morders():
 
 @admin.route('/morders', methods=['GET'])
 def manage_orders():
-    if 'admin' not in session:  # Ensure admin session key is checked
+    if 'admin' not in session:
         return jsonify({'error': 'Admin not logged in'}), 401
 
     db = connect_db()
     cursor = db.cursor(dictionary=True)
 
     try:
-        # Fetch all orders with user info
+        # Only fetch orders with payment screenshot submitted
         cursor.execute("""
             SELECT o.order_id, o.ordered_at, o.total_amount, o.status, o.payment_ss, o.cancellation_reason,
                    u.user_id, u.first_name, u.middle_name, u.last_name, u.email, u.contact, u.address
             FROM orders o
             JOIN users u ON o.user_id = u.user_id
+            WHERE o.payment_ss IS NOT NULL
             ORDER BY o.ordered_at DESC
         """)
         order_rows = cursor.fetchall()
@@ -719,7 +814,8 @@ def manage_orders():
                 'ordered_at': row['ordered_at'].strftime('%Y-%m-%d %H:%M'),
                 'total_amount': float(row['total_amount']),
                 'status': row['status'],
-                'payment_ss': row['payment_ss'] if row['payment_ss'] else None,
+                'payment_ss': row['payment_ss'],
+                'payment_submitted': True,
                 'cancellation_reason': row['cancellation_reason'],
                 'items': items
             })
@@ -731,7 +827,7 @@ def manage_orders():
                 'orders': orders_grouped[uid]
             })
 
-        return jsonify({'customers': customers})  # ✅ matches JS
+        return jsonify({'customers': customers})
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -978,3 +1074,25 @@ def get_sales_data():
             })
 
     return jsonify({'sales': result})
+
+@admin.route('/dashboard')
+def admin_dashboard():
+    # Sample data - replace with your actual data from database
+    data = {
+        'total_sales': 25680.00,
+        'total_orders': 184,
+        'total_customers': 1248,
+        'avg_order_value': 139.57,
+        'revenue_data': [1200, 1900, 1500, 2200, 1800, 2500, 3000],
+        'revenue_dates': ['1', '5', '10', '15', '20', '25', '30'],
+        'category_sales': [45, 25, 20, 10],
+        'categories': ['Food', 'Beverages', 'Desserts', 'Snacks'],
+        'top_items': ['Burger Deluxe', 'Pasta Carbonara', 'Chicken BBQ', 'Milkshake', 'Pizza Supreme', 'Caesar Salad', 'Cheesecake'],
+        'top_quantities': [140, 120, 95, 85, 75, 65, 50],
+        'top_revenues': [1400, 1200, 950, 850, 750, 650, 500],
+        'recent_orders': [
+            {'id': 'CR-7842', 'customer': 'John Smith', 'date': 'Jul 8, 2023', 'amount': '1,240.00', 'status': 'completed'},
+            # ... other orders
+        ]
+    }
+    return render_template('index.html', **data)

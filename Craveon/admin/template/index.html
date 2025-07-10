@@ -7,27 +7,46 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
+    body {
+        background-color: #0d1117;
+        color: #e0e0e0;
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    .container {
+        padding: 30px;
+    }
+
     .card-container {
         display: flex;
-        justify-content: center;
-        gap: 30px;
+        justify-content: space-around;
+        gap: 20px;
         flex-wrap: wrap;
-        margin-top: 30px;
+        margin-bottom: 40px;
     }
 
     .card {
-        width: 300px;
-        padding: 25px;
+        background: linear-gradient(145deg, #1f2937, #111827);
+        color: #00ffff;
         border-radius: 15px;
-        background: #f8f9fa;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        padding: 20px 30px;
+        box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
         text-align: center;
+        flex: 1;
+        min-width: 280px;
+        transition: transform 0.3s ease;
+    }
+
+    .card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 0 25px rgba(0, 255, 255, 0.6);
     }
 
     .card i {
         font-size: 2.5rem;
-        margin-bottom: 15px;
-        color: #007bff;
+        margin-bottom: 10px;
+        color: #00ffff;
+        text-shadow: 0 0 8px #00ffff;
     }
 
     .card h2 {
@@ -36,21 +55,28 @@
     }
 
     .card p {
-        font-size: 1.3rem;
+        font-size: 1.8rem;
         font-weight: bold;
     }
 
     .chart-container {
-        max-width: 900px;
-        margin: 50px auto;
+        background-color: #1a1f2e;
         padding: 30px;
-        background: #ffffff;
         border-radius: 15px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+    }
+
+    .chart-container h3 {
+        color: #00ffff;
+        text-align: center;
+        margin-bottom: 20px;
+        text-shadow: 0 0 5px #00ffff;
     }
 
     canvas {
-        margin-top: 20px;
+        background-color: #111827;
+        padding: 10px;
+        border-radius: 10px;
     }
 </style>
 {% endblock %}
@@ -71,12 +97,14 @@
     </div>
 
     <div class="chart-container">
-        <h3 class="text-center">Top Selling Items (This Month)</h3>
+        <h3>Top Selling Items (This Month)</h3>
         <canvas id="salesChart" height="100"></canvas>
     </div>
 </div>
 
 <script>
+
+    
     const ctx = document.getElementById('salesChart').getContext('2d');
     const salesChart = new Chart(ctx, {
         type: 'bar',
@@ -86,8 +114,9 @@
                 {
                     label: 'Quantity Sold',
                     data: {{ item_sales | tojson }},
-                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(0, 255, 255, 0.5)',
+                    borderColor: 'rgba(0, 255, 255, 1)',
+                    borderWidth: 1,
                     yAxisID: 'y1'
                 },
                 {
@@ -95,34 +124,51 @@
                     data: {{ item_revenues | tojson }},
                     type: 'line',
                     borderColor: 'rgba(255, 99, 132, 1)',
-                    backgroundColor: 'rgba(255, 99, 132, 0.3)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
                     yAxisID: 'y2',
-                    tension: 0.3
+                    tension: 0.3,
+                    fill: true
                 }
             ]
         },
         options: {
             responsive: true,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#00ffff'
+                    }
+                }
+            },
             interaction: {
                 mode: 'index',
                 intersect: false
             },
             scales: {
+                x: {
+                    ticks: { color: '#ccc' },
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                },
                 y1: {
                     beginAtZero: true,
                     position: 'left',
                     title: {
                         display: true,
-                        text: 'Quantity'
-                    }
+                        text: 'Quantity',
+                        color: '#00ffff'
+                    },
+                    ticks: { color: '#ccc' },
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' }
                 },
                 y2: {
                     beginAtZero: true,
                     position: 'right',
                     title: {
                         display: true,
-                        text: '₱ Revenue'
+                        text: '₱ Revenue',
+                        color: '#ff6384'
                     },
+                    ticks: { color: '#ccc' },
                     grid: {
                         drawOnChartArea: false
                     }

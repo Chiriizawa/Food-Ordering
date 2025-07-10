@@ -1,54 +1,263 @@
+/* Font */
 body {
-    display: flex;
+    font-family: 'Orbitron', sans-serif;
+    background-color: #0d1117;
+    color: #e0e0e0;
 }
 
-.sidebar {
-    width: 250px;
-    min-height: 100vh;
-    background-color: #81A094;
-    box-shadow: 2px 0 5px hsla(0, 0%, 0%, 0.1);
+/* Sidebar */
+#sidebar {
     position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 260px;
+    background: linear-gradient(to bottom, #111827, #0d1117);
+    box-shadow: 2px 0 12px rgba(0, 255, 255, 0.2);
+    z-index: 1040;
+    transition: transform 0.3s ease;
+    overflow-y: auto;
 }
 
-/* Style for all sidebar links except the logo */
-.sidebar a:not(.navbar-brand) {
-    color: #333;
-    text-decoration: none;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    letter-spacing: 1px; /* Slight spacing between letters */
-    word-spacing: 3px; /* Optional spacing between words */
+#sidebar.collapsed {
+    transform: translateX(-100%);
 }
 
-/* Add hover effect only to nav links, not the logo */
-.sidebar a:not(.navbar-brand):hover {
-    background-color: #e3ebec;
-    color: #000;
-    transform: translateX(5px); /* Slight shift on hover */
-    box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.1); /* Optional shadow */
+/* Sidebar links */
+#sidebar .nav-link {
+    color: #00ffff;
+    padding: 12px 16px;
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent;
 }
 
-/* Active link style */
-.sidebar .nav-link.active {
-    background-color: #4f8ece;
-    font-weight: bold;
+#sidebar .nav-link:hover {
+    background-color: rgba(0, 255, 255, 0.1);
+    border-left: 3px solid #00ffff;
+    text-shadow: 0 0 8px #00ffff;
 }
 
-/* Style for the logo */
-.sidebar .navbar-brand {
-    color: #333;
-    text-decoration: none;
-    font-size: 1.25rem;
+#sidebar hr {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Add spacing for the logo text */
-.sidebar .navbar-brand span {
-    letter-spacing: 2px; /* Space between letters */
-    word-spacing: 5px; /* Space between words (optional) */
+/* Sidebar brand image */
+#sidebar .navbar-brand img {
+    filter: drop-shadow(0 0 5px #00ffff);
 }
 
-/* Main content styling */
-.content {
-    margin-left: 250px;
-    padding: 20px;
-    width: calc(100% - 250px);
+/* Toggle button */
+#sidebarToggle {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1100;
+    background-color: #00ffff;
+    border: none;
+    color: #0d1117;
+    padding: 10px 14px;
+    border-radius: 5px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    box-shadow: 0 0 10px #00ffff;
+}
+
+/* Main content */
+#main-content {
+    margin-left: 260px;
+    transition: margin-left 0.3s ease;
+    padding: 30px;
+}
+
+#main-content.expanded {
+    margin-left: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    #sidebar {
+        transform: translateX(-100%);
+    }
+
+    #main-content {
+        margin-left: 0;
+    }
+}
+/* Sidebar Base */
+#sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 80px; /* collapsed width */
+    background: linear-gradient(to bottom, #0f111a, #0d1117);
+    box-shadow: 2px 0 12px rgba(0, 255, 255, 0.2);
+    overflow-x: hidden;
+    overflow-y: auto;
+    z-index: 1040;
+    transition: width 0.3s ease;
+}
+
+/* Expanded on hover */
+#sidebar.expanded {
+    width: 260px;
+}
+
+/* Sidebar links */
+#sidebar .nav-link {
+    color: #00ffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0;
+    padding-left: 16px;
+    transition: opacity 0.2s ease;
+}
+
+#sidebar.expanded .nav-link {
+    opacity: 1;
+}
+
+#sidebar .nav-item {
+    margin-bottom: 10px;
+}
+
+/* Icon-only style when collapsed */
+#sidebar:not(.expanded) .nav-link i {
+    margin-right: 0;
+}
+
+#sidebar .nav-link:hover {
+    background-color: rgba(0, 255, 255, 0.1);
+    border-left: 3px solid #00ffff;
+    text-shadow: 0 0 8px #00ffff;
+}
+
+/* Toggle Button (optional, for mobile only) */
+#sidebarToggle {
+    display: none;
+}
+
+/* Main content */
+#main-content {
+    margin-left: 80px;
+    transition: margin-left 0.3s ease;
+    padding: 30px;
+}
+
+#sidebar.expanded ~ #main-content {
+    margin-left: 260px;
+}
+
+/* Responsive behavior */
+@media (max-width: 768px) {
+    #sidebar {
+        transform: translateX(-100%);
+    }
+
+    #sidebar.expanded {
+        transform: translateX(0);
+        width: 260px;
+    }
+
+    #sidebarToggle {
+        display: block;
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        z-index: 1100;
+        background-color: #00ffff;
+        border: none;
+        color: #0d1117;
+        padding: 10px 14px;
+        border-radius: 5px;
+        font-size: 1.2rem;
+        cursor: pointer;
+        box-shadow: 0 0 10px #00ffff;
+    }
+
+    #main-content {
+        margin-left: 0;
+    }
+
+    #sidebar.expanded ~ #main-content {
+        margin-left: 0;
+    }
+}
+.sidebar.collapsed img.logo {
+    width: 40px;
+    height: 40px;
+    transition: 0.3s ease;
+}
+
+.sidebar.expanded img.logo {
+    width: 100px;
+    height: 100px;
+}
+/* Sidebar base style */
+.sidebar {
+    width: 80px;
+    height: 100vh;
+    background-color: #1b1f2b;
+    position: fixed;
+    top: 0;
+    left: 0;
+    transition: width 0.3s ease;
+    overflow-x: hidden;
+    z-index: 1000;
+}
+
+/* Expanded when hovered */
+.sidebar.expanded {
+    width: 220px;
+}
+
+/* Logo behavior */
+.sidebar-logo {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    transition: width 0.3s ease, height 0.3s ease;
+}
+
+.sidebar.expanded .sidebar-logo {
+    width: 120px;
+    height: 120px;
+}
+
+/* Nav text hides when collapsed */
+.sidebar .nav-link {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #ccc;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar:not(.expanded) .nav-link {
+    opacity: 0;
+}
+
+/* Keep icons visible even when collapsed */
+.sidebar .nav-link i {
+    margin-right: 0;
+    display: inline-block;
+    width: 40px;
+    text-align: center;
+    font-size: 1.2rem;
+    color: #6cf;
+}
+
+/* Toggle button style (optional) */
+#sidebarToggle {
+    position: fixed;
+    top: 10px;
+    left: 90px;
+    z-index: 1100;
+    background-color: #1b1f2b;
+    color: #fff;
+    border: none;
+    padding: 8px 10px;
+    border-radius: 5px;
+    cursor: pointer;
 }

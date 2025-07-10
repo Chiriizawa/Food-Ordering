@@ -6,6 +6,110 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+\
+<style>
+    body {
+        background-color: #0d1117;
+        color: #00ffff;
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    .card {
+        background: linear-gradient(to right, #111827, #1a1f2e);
+        border: none;
+        box-shadow: 0 0 15px rgba(0, 255, 255, 0.1);
+    }
+
+    .card-header {
+        background: #00ffff !important;
+        color: #000;
+        font-weight: bold;
+        box-shadow: 0 0 10px #00ffff;
+    }
+
+    .btn-success, .btn-primary, .btn-warning, .btn-danger, .btn-secondary {
+        font-weight: bold;
+        border: none;
+        box-shadow: 0 0 8px rgba(0, 255, 255, 0.2);
+    }
+
+    .btn-success {
+        background-color: #00ffcc;
+        color: #000;
+    }
+
+    .btn-success:hover {
+        background-color: #00e6b8;
+    }
+
+    .btn-warning {
+        background-color: #facc15;
+        color: #000;
+    }
+
+    .btn-danger {
+        background-color: #ef4444;
+        color: #fff;
+    }
+
+    .btn-secondary {
+        background-color: #6b7280;
+        color: #fff;
+    }
+
+    .btn-primary {
+        background-color: #00ffff;
+        color: #000;
+    }
+
+    .form-control {
+        background-color: #0f172a;
+        border: 1px solid #00ffffaa;
+        color: #00ffff;
+        border-radius: 8px;
+    }
+
+    .form-control:focus {
+        border-color: #00ffff;
+        box-shadow: 0 0 10px #00ffff;
+        background-color: #0f172a;
+        color: #00ffff;
+    }
+
+    .list-group-item {
+        background-color: #111827;
+        color: #00ffff;
+        border: 1px solid #00ffff22;
+    }
+
+    .list-group-item.bg-light {
+        background-color: #1f2937 !important;
+        color: #7fffd4 !important;
+    }
+
+    .badge.bg-secondary {
+        background-color: #64748b;
+    }
+
+    .modal-content {
+        background-color: #1f2937;
+        color: #00ffff;
+        border: 1px solid #00ffff30;
+        box-shadow: 0 0 10px rgba(0, 255, 255, 0.1);
+    }
+
+    .modal-header.bg-warning {
+        background-color: #facc15 !important;
+        color: #000;
+    }
+
+    .alert-success,
+    .alert-danger {
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 255, 255, 0.1);
+    }
+</style>
+
 {% endblock %}
 
 {% block content %}

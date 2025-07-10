@@ -1,4 +1,4 @@
-from flask import Flask, Blueprint, render_template, request, flash, session, redirect, url_for, current_app, jsonify, make_response, json
+from flask import Flask, Blueprint, render_template, request, flash, session, redirect, url_for, current_app, jsonify, make_response
 import mysql.connector
 import base64
 from datetime import datetime
@@ -6,8 +6,6 @@ import re
 import random
 from flask_mail import Message
 from flask_bcrypt import Bcrypt
-
-
 
 customer = Blueprint('customer', __name__, template_folder="template") 
 
@@ -19,11 +17,19 @@ def make_header(response):
     response.headers['Expires'] = '0'
     return response
 
-db_config = {
-    'host':'192.168.1.4',
-    'database':'craveon',
-    'user':'root',
-    'password':'haharaymund',
+DB_CONFIGS = {
+    'local': {
+        'host': '192.168.1.68',
+        'database': 'craveon',
+        'user': 'root',
+        'password': 'ClodAndrei8225',
+    },
+    'flask_connection': {
+        'host': '192.168.1.65',
+        'database': 'hotel_management',
+        'user': 'root',
+        'password': 'admin',
+    }
 }
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
@@ -31,11 +37,14 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def get_db_config():
+    # Choose config based on environment variable, session, or other logic
+    # Example: use ?db=flask_connection in query string to select remote DB
+    db_key = request.args.get('db', 'local')
+    return DB_CONFIGS.get(db_key, DB_CONFIGS['local'])
 
 def connect_db():
-    return mysql.connector.connect(**db_config)
-conn = connect_db()
-cursor = conn.cursor()
+    return mysql.connector.connect(**get_db_config())
 
 @customer.app_template_filter('b64encode')
 def b64encode_filter(data):
@@ -203,6 +212,98 @@ def logout():
     response = make_response(redirect(url_for('customer.index')))
     response = make_header(response)
     return response
+
+@customer.route('/api/checkin-guests', methods=['GET'])
+def hotel_checkedin_guests():
+    conn = mysql.connector.connect(
+        host=DB_CONFIGS['flask_connection']['host'],
+        user=DB_CONFIGS['flask_connection']['user'],
+        password=DB_CONFIGS['flask_connection']['password'],
+        database=DB_CONFIGS['flask_connection']['database']
+    )
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT id AS booking_id, user_id, room_id, check_in_date, check_out_date, status
+        FROM bookings
+        WHERE status = 'checked_in'
+    """)
+    bookings = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return jsonify({"checked_in_bookings": bookings})
+
+@customer.route('/api/hotel-food-order', methods=['POST'])
+def hotel_guest_order():
+    data = request.get_json(force=True)
+    hotel_booking_id = data.get('hotel_booking_id')
+    items = data.get('items', [])
+    notes = data.get('notes', '')
+
+    # 1. Check if booking is checked in
+    hotel_conn = mysql.connector.connect(
+        host=DB_CONFIGS['flask_connection']['host'],
+        user=DB_CONFIGS['flask_connection']['user'],
+        password=DB_CONFIGS['flask_connection']['password'],
+        database=DB_CONFIGS['flask_connection']['database']
+    )
+    hotel_cursor = hotel_conn.cursor(dictionary=True)
+    hotel_cursor.execute(
+        "SELECT id, status FROM bookings WHERE id = %s", (hotel_booking_id,)
+    )
+    booking = hotel_cursor.fetchone()
+    hotel_cursor.close()
+    hotel_conn.close()
+
+    if not booking or booking['status'] != 'checked_in':
+        return jsonify({"success": False, "message": "Booking not found or not checked in"}), 400
+
+    # 2. Place food order in craveon.orders
+    if not items or not isinstance(items, list):
+        return jsonify({"success": False, "message": "Items must be a non-empty list"}), 400
+
+    try:
+        craveon_conn = mysql.connector.connect(**DB_CONFIGS['local'])
+        craveon_cursor = craveon_conn.cursor()
+        total_amount = 0.0
+        for item in items:
+            craveon_cursor.execute("SELECT price FROM items WHERE item_id = %s", (item['item_id'],))
+            row = craveon_cursor.fetchone()
+            if not row:
+                return jsonify({"success": False, "message": f"Item ID {item['item_id']} not found"}), 404
+            price = float(row[0])
+            total_amount += price * int(item['quantity'])
+
+        craveon_cursor.execute("""
+            INSERT INTO orders (user_id, total_amount, status, notes, hotel_booking_id, source)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (
+            None,  # No user_id for external guest
+            total_amount,
+            'pending',
+            notes,
+            hotel_booking_id,
+            'hotel'
+        ))
+        order_id = craveon_cursor.lastrowid
+
+        for item in items:
+            craveon_cursor.execute("""
+                INSERT INTO order_items (order_id, item_id, quantity)
+                VALUES (%s, %s, %s)
+            """, (order_id, item['item_id'], item['quantity']))
+
+        craveon_conn.commit()
+        craveon_cursor.close()
+        craveon_conn.close()
+
+        return jsonify({
+            "success": True,
+            "order_id": order_id,
+            "message": "Order placed successfully"
+        }), 201
+
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
 
 
 @customer.route("/Verify-Account", methods=['GET', 'POST'])
@@ -1018,4 +1119,29 @@ def upload_image():
     flash('Profile image updated successfully.', 'success')
     return redirect(url_for('customer.account'))
 
+@customer.route('/api/submit_review', methods=['POST'])
+def submit_review():
+    data = request.get_json()
+    order_id = data.get('order_id')
+    rating = data.get('rating')
+    comment = data.get('comment', '').strip()
 
+    if not order_id or not rating:
+        return jsonify({'error': 'Missing data'}), 400
+
+    db = connect_db()
+    cursor = db.cursor()
+
+    cursor.execute("SELECT reviewed FROM orders WHERE order_id = %s", (order_id,))
+    row = cursor.fetchone()
+    if not row:
+        return jsonify({'error': 'Order not found'}), 404
+    if row[0]:
+        return jsonify({'error': 'You have already reviewed this order'}), 400
+
+    cursor.execute("INSERT INTO reviews (order_id, rating, comment) VALUES (%s, %s, %s)",
+                   (order_id, rating, comment))
+    cursor.execute("UPDATE orders SET reviewed = 1 WHERE order_id = %s", (order_id,))
+    db.commit()
+
+    return jsonify({'message': 'Thank you for your review!'})
