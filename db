@@ -43,14 +43,18 @@ CREATE TABLE orders(
 	order_id INT AUTO_INCREMENT PRIMARY KEY,
 	user_id INT,
     total_amount DECIMAL(10,2) NOT NULL,
-	status ENUM('Pending','Processing', 'Completed', 'Cancelled') DEFAULT 'Pending',
+	status ENUM('Pending', 'Processing', 'Completed', 'Cancelled', 'Reviewed') DEFAULT 'Pending',
 	payment_ss LONGTEXT NULL,
 	payment_submitted BOOLEAN,
-	reviewed BOOLEAN DEFAULT FALSE
+	reviewed BOOLEAN DEFAULT FALSE,
 	cancellation_reason TEXT,
 	ordered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
+
+ALTER TABLE orders
+MODIFY COLUMN status ENUM('Pending', 'Processing', 'Completed', 'Cancelled', 'Reviewed') DEFAULT 'Pending';
+
 
 CREATE TABLE order_items(
     order_item_id INT AUTO_INCREMENT PRIMARY KEY,

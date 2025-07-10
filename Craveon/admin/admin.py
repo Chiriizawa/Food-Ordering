@@ -4,7 +4,6 @@ import mysql.connector
 from flask_bcrypt import Bcrypt
 from werkzeug.utils import secure_filename
 import datetime
-import requests
 
 admin = Blueprint('admin', __name__, template_folder="template")
 bcrypt = Bcrypt()
@@ -12,10 +11,10 @@ bcrypt = Bcrypt()
 # Support multiple database configurations (local and remote)
 DB_CONFIGS = {
     'local': {
-        'host': '192.168.1.68',
+        'host': '192.168.1.4',
         'database': 'craveon',
         'user': 'root',
-        'password': 'ClodAndrei8225',
+        'password': 'haharaymund',
     },
     'flask_connection': {
         'host': '192.168.1.65',
@@ -1096,3 +1095,26 @@ def admin_dashboard():
         ]
     }
     return render_template('index.html', **data)
+
+@admin.route('/reviews')
+def reviews():
+    if 'admin' not in session:
+        return redirect(url_for('admin.login'))
+
+    db = connect_db()
+    cursor = db.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT r.id, r.order_id, r.rating, r.comment, r.created_at,
+        u.first_name, u.last_name
+        FROM reviews r
+        JOIN orders o ON r.order_id = o.order_id
+        JOIN users u ON o.user_id = u.user_id
+        ORDER BY r.created_at DESC
+    """)
+    reviews = cursor.fetchall()
+
+    cursor.close()
+    db.close()
+
+    return render_template('reviews.html', reviews=reviews)

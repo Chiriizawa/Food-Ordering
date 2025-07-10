@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block head %}
+    <title>Admin - Customer Reviews</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+{% endblock %}
+
+{% block content %}
+<div class="p-8">
+    <h1 class="text-3xl font-bold mb-6">Customer Reviews</h1>
+    <div class="overflow-x-auto">
+        <table class="min-w-full bg-white shadow-md rounded-lg">
+            <thead>
+                <tr class="bg-gray-200 text-gray-700">
+                    <th class="py-3 px-6 text-left">Customer</th>
+                    <th class="py-3 px-6 text-left">Order ID</th>
+                    <th class="py-3 px-6 text-left">Rating</th>
+                    <th class="py-3 px-6 text-left">Comment</th>
+                    <th class="py-3 px-6 text-left">Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for review in reviews %}
+                <tr class="border-b hover:bg-gray-100">
+                    <td class="py-3 px-6">{{ review.first_name }} {{ review.last_name }}</td>
+                    <td class="py-3 px-6">{{ review.order_id }}</td>
+                    <td class="py-3 px-6">
+                        {% for i in range(review.rating) %}
+                            ⭐
+                        {% endfor %}
+                    </td>
+                    <td class="py-3 px-6">{{ review.comment or 'No comment' }}</td>
+                    <td class="py-3 px-6">{{ review.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                </tr>
+                {% endfor %}
+                {% if reviews|length == 0 %}
+                <tr>
+                    <td colspan="5" class="text-center py-4 text-gray-500">No reviews yet.</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -71,6 +71,7 @@
 <script>
 let currentReviewOrderId = null;
 let currentRating = 0;
+let currentCancelOrderId = null;
 
 function openReviewModal(orderId) {
     currentReviewOrderId = orderId;
@@ -93,6 +94,23 @@ function renderStars() {
         star.onclick = () => { currentRating = i; renderStars(); };
         container.appendChild(star);
     }
+}
+
+function openCancelOrderModal(orderId, items) {
+    currentCancelOrderId = orderId;
+    document.getElementById('cancel-order-modal').classList.remove('hidden');
+
+    const summary = items.map(item => 
+        `<div class="flex justify-between">
+            <span>${item.name} × ${item.quantity}</span>
+            <span>₱${(item.price * item.quantity).toFixed(2)}</span>
+        </div>`).join('');
+
+    document.getElementById('order-summary').innerHTML = summary;
+
+    document.getElementById('close-cancel-modal').onclick = () => {
+        document.getElementById('cancel-order-modal').classList.add('hidden');
+    };
 }
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -133,6 +151,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     'Completed': 'text-green-900',
                     'Processing': 'text-yellow-700',
                     'Cancelled': 'text-red-500',
+                    'Reviewed': 'text-blue-500'
                 };
 
                 const card = document.createElement('div');
@@ -152,11 +171,13 @@ document.addEventListener('DOMContentLoaded', function () {
                             ${['Pending', 'Approved'].includes(order.status) ? 
                             `<button onclick="openCancelOrderModal(${order.order_id}, ${JSON.stringify(order.items).replace(/"/g, '&quot;')})"
                                 class="w-full py-2 bg-red-500 hover:bg-red-600 text-white rounded-md">Cancel Order</button>` : ''}
-                            ${order.status === 'Completed' ?
-                                (order.reviewed ?
-                                    `<button class="w-full py-2 bg-gray-400 text-white rounded-md cursor-not-allowed" disabled>Reviewed</button>` :
-                                    `<button onclick="openReviewModal(${order.order_id})"
-                                        class="w-full py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md" id="review-btn-${order.order_id}">Leave a Review</button>`) : ''}
+
+                            ${order.status === 'Completed' && !order.reviewed ? `
+                                <button onclick="openReviewModal(${order.order_id})"
+                                    class="w-full py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md" id="review-btn-${order.order_id}">
+                                    Leave a Review
+                                </button>
+                            ` : ''}
                         </div>
                     </div>
                 `;
@@ -178,18 +199,47 @@ document.addEventListener('DOMContentLoaded', function () {
             alert(data.message || 'Review submitted!');
             document.getElementById('review-modal').classList.add('hidden');
 
-            // Disable the review button dynamically
+            // Remove the review button and update status to Reviewed
             const btn = document.getElementById(`review-btn-${currentReviewOrderId}`);
-            if (btn) {
-                btn.textContent = 'Reviewed';
-                btn.disabled = true;
-                btn.classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
-                btn.classList.add('bg-gray-400', 'cursor-not-allowed');
+            if (btn) btn.remove();
+            
+            // Update the status display if needed
+            const statusSpan = document.querySelector(`#orders-container [onclick*="openReviewModal(${currentReviewOrderId})"]`)?.closest('.bg-gray-400')?.querySelector('span');
+            if (statusSpan) {
+                statusSpan.textContent = 'Reviewed';
+                statusSpan.className = 'text-sm font-semibold text-blue-500';
             }
         })
         .catch(err => {
             console.error(err);
             alert('Failed to submit review.');
+        });
+    };
+
+    document.getElementById('submit-cancellation').onclick = () => {
+        const reason = document.getElementById('reason-select').value;
+        const other = document.getElementById('other-reason').value.trim();
+        const cancellationReason = reason === 'Others' ? other : reason;
+
+        if (!cancellationReason) {
+            alert('Please provide a cancellation reason.');
+            return;
+        }
+
+        fetch('/api/cancel_order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order_id: currentCancelOrderId, cancellation_reason: cancellationReason })
+        })
+        .then(res => res.json())
+        .then(data => {
+            alert(data.message || 'Order cancelled.');
+            document.getElementById('cancel-order-modal').classList.add('hidden');
+            location.reload();
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Cancellation failed.');
         });
     };
 });
