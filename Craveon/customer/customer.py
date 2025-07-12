@@ -327,13 +327,11 @@ def verify():
             session["verified"] = True
             session.pop("verification_code", None)
             
-            # ✅ Redirect with no-cache so back button won’t work
             response = redirect(url_for("customer.index"))
             return make_header(response)
         else:
             error_message = "Invalid verification code."
 
-    # ✅ Final response with no cache (so browser won’t keep it)
     response = make_response(render_template("verify.html", error_message=error_message))
     return make_header(response)
 
@@ -352,12 +350,10 @@ def forgot_password():
         if not email:
             email_error = "Email is required."
         else:
-            # Check if email format is valid
             email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
             if not re.match(email_pattern, email):
                 email_error = "Invalid email format."
             else:
-                # Check if the email exists in the database
                 conn = connect_db()
                 cursor = conn.cursor(dictionary=True)
                 cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
@@ -368,7 +364,6 @@ def forgot_password():
                 if not user:
                     email_error = "Email not found. Please check your email."
                 else:
-                    # Save reset session data
                     session["reset_user_id"] = user['user_id']
                     session["reset_email"] = email
                     session["reset_verification_code"] = str(random.randint(100000, 999999))
@@ -379,10 +374,8 @@ def forgot_password():
                     else:
                         email_error = "Failed to send verification email. Try again later."
 
-        # Return form with error (POST)
         return make_header(make_response(render_template("forgotpassword.html", email_error=email_error)))
 
-    # Return form on GET
     return make_header(make_response(render_template("forgotpassword.html", email_error=email_error)))
 
 
@@ -412,7 +405,6 @@ def verify_reset():
         else:
             error_message = "Invalid verification code."
 
-    # Apply no-cache headers to prevent back navigation
     response = make_response(render_template("verifyreset.html", error_message=error_message))
     return make_header(response)
 
@@ -636,49 +628,50 @@ def menu():
     connection = connect_db()
     cursor = connection.cursor()
 
-    # Fetch items with category name
+    # Fetch only active categories (is_archived = FALSE)
+    cursor.execute("""
+        SELECT category_id, category_name 
+        FROM categories 
+        WHERE is_archived = FALSE
+        ORDER BY category_name
+    """)
+    categories = cursor.fetchall()
+
+    # Fetch only active items (is_archived = FALSE) from active categories
     cursor.execute("""
         SELECT i.item_id, i.item_name, i.price, i.image, c.category_name 
         FROM items i
         JOIN categories c ON i.category_id = c.category_id
+        WHERE i.is_archived = FALSE AND c.is_archived = FALSE
+        ORDER BY i.item_name
     """)
     items = cursor.fetchall()
-    print("Fetched items:", items)
-
-    # Fetch categories
-    cursor.execute("SELECT category_id, category_name FROM categories")
-    categories = cursor.fetchall()
-    print("Fetched categories:", categories)
     connection.close()
 
-    # Prepare JSON response data
+    # Prepare data for JSON response
     json_data = {
-        "items": [],
-        "categories": [{"category_id": c[0], "category_name": c[1]} for c in categories]
+        "items": [{
+            "item_id": item[0],
+            "name": item[1],
+            "price": float(item[2]),
+            "image": base64.b64encode(item[3]).decode('utf-8') if item[3] else None,
+            "category_name": item[4]
+        } for item in items],
+        "categories": [{
+            "category_id": cat[0],
+            "category_name": cat[1]
+        } for cat in categories]
     }
 
-    # Format items
-    for item in items:
-        item_id, name, price, img, category_name = item
-        json_data["items"].append({
-            "item_id": item_id,
-            "name": name,
-            "price": float(price),
-            "image": base64.b64encode(img).decode('utf-8') if img else None,
-            "category_name": category_name
-        })
-
-    print("Prepared JSON data:", json_data)
-
-    # Check if client accepts JSON
+    # Return JSON if requested
     if 'application/json' in request.headers.get('Accept', ''):
-        print("Returning JSON response")
-        return jsonify({
-            'data': json_data
-        })
+        return jsonify({'data': json_data})
     
-    print("Rendering menu.html")
-    return render_template('menu.html', items=json_data["items"], categories=json_data["categories"])
+    # Render HTML template
+    return render_template('menu.html', 
+                         items=json_data["items"], 
+                         categories=json_data["categories"])
+    
 @customer.route('/buy-now', methods=['POST'])
 def buy_now():
     if 'user' not in session:

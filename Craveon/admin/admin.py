@@ -452,105 +452,99 @@ def api_manage_item():
 
 @admin.route('/Manage-Item', methods=['GET', 'POST'])
 def manageitem():
+    # JSON response handler
     if request.headers.get('Accept') == 'application/json':
+        if 'admin' not in session:
+            return jsonify({'error': 'Unauthorized'}), 401
+            
         try:
             connection = connect_db()
             cursor = connection.cursor()
+            
+            # Get both active and archived items
             cursor.execute("""
-                SELECT items.item_id, items.item_name, items.price, items.image, items.category_id, categories.category_name
-                FROM items
-                LEFT JOIN categories ON items.category_id = categories.category_id
-                WHERE items.is_archived = 0
+                SELECT i.item_id, i.item_name, i.price, i.image, 
+                       i.category_id, c.category_name, i.is_archived
+                FROM items i
+                LEFT JOIN categories c ON i.category_id = c.category_id
+                ORDER BY i.is_archived, i.item_name
             """)
-            active_items = cursor.fetchall()
-            cursor.execute("""
-                SELECT items.item_id, items.item_name, items.price, items.image, items.category_id, categories.category_name
-                FROM items
-                LEFT JOIN categories ON items.category_id = categories.category_id
-                WHERE items.is_archived = 1
-            """)
-            archived_items = cursor.fetchall()
+            
+            items = cursor.fetchall()
+            
+            def process_item(item):
+                item_id, name, price, image, cat_id, cat_name, is_archived = item
+                return {
+                    'item_id': item_id,
+                    'item_name': name,
+                    'price': float(price),
+                    'image': base64.b64encode(image).decode('utf-8') if image else None,
+                    'category_id': cat_id,
+                    'category_name': cat_name or "Uncategorized",
+                    'is_archived': bool(is_archived)
+                }
+
+            active_items = [process_item(item) for item in items if not item[6]]
+            archived_items = [process_item(item) for item in items if item[6]]
+            
+            return jsonify({
+                'active_items': active_items,
+                'archived_items': archived_items
+            })
+            
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+        finally:
             cursor.close()
             connection.close()
 
-            def process_items(raw_items):
-                result = []
-                for item in raw_items:
-                    item_id, item_name, price, image_data, category_id, category_name = item
-                    image_base64 = base64.b64encode(image_data).decode('utf-8') if image_data else None
-                    result.append({
-                        'item_id': item_id,
-                        'item_name': item_name,
-                        'price': float(price),
-                        'image': image_base64,
-                        'category_id': category_id,
-                        'category_name': category_name or "Uncategorized"
-                    })
-                return result
-
-            return jsonify({
-                'active_items': process_items(active_items),
-                'archived_items': process_items(archived_items)
-            })
-        except Exception as e:
-            return jsonify({'error': str(e)}), 500
-
+    # Normal HTML response handler
     if 'admin' not in session:
         return redirect(url_for('admin.login'))
 
-    error_item = None
-    error_price = None
-    error_image = None
+    error_item = error_price = error_image = None
+    categories = []
+    active_items = []
+    archived_items = []
 
     try:
         connection = connect_db()
         cursor = connection.cursor()
 
-        # Fetch categories
-        cursor.execute("SELECT category_id, category_name FROM categories")
-        categories = cursor.fetchall()
-
+        # Handle form submission
         if request.method == "POST":
             name = request.form.get('name', '').strip()
-            price_input = request.form.get('price', '').strip()
-            category_id = request.form.get('category_id', '').strip()
+            price = request.form.get('price', '').strip()
+            category_id = request.form.get('category_id')
             image = request.files.get('image')
 
+            # Validate inputs
             valid = True
-
-            # Validate name
+            
+            # Name validation
             if not name:
                 error_item = "Item name is required."
                 valid = False
-            elif not all(word.isalpha() for word in name.split()):
-                error_item = "Item name must contain only letters and spaces."
+            elif len(name) < 2 or len(name) > 50:
+                error_item = "Item name must be between 2-50 characters."
                 valid = False
-            elif len(name) < 4 or len(name) > 19:
-                error_item = "Item name must be between 4 and 19 characters."
-                valid = False
-            else:
-                cursor.execute("SELECT COUNT(*) FROM items WHERE LOWER(item_name) = LOWER(%s)", (name,))
-                (count,) = cursor.fetchone()
-                if count > 0:
-                    error_item = "Item name already exists."
-                    valid = False
-
-            # Validate price
+                
+            # Price validation
             try:
-                price = float(price_input)
-                if price < 0:
-                    error_price = "Price cannot be negative."
+                price = float(price)
+                if price <= 0:
+                    error_price = "Price must be positive."
                     valid = False
             except ValueError:
                 error_price = "Invalid price format."
                 valid = False
-
-            # Validate image
+                
+            # Image validation
             if not image or image.filename == '':
                 error_image = "Image is required."
                 valid = False
             elif not allowed_file(image.filename):
-                error_image = "Invalid image format. Only JPG, JPEG, PNG, GIF allowed."
+                error_image = "Only JPG, JPEG, PNG, GIF allowed."
                 valid = False
 
             if valid:
@@ -558,83 +552,81 @@ def manageitem():
                 try:
                     cursor.execute("""
                         INSERT INTO items (item_name, price, image, category_id, is_archived)
-                        VALUES (%s, %s, %s, %s, %s)
-                    """, (name, price, image_data, category_id, 0))
+                        VALUES (%s, %s, %s, %s, 0)
+                    """, (name, price, image_data, category_id))
                     connection.commit()
                     flash("Item added successfully!", "success")
                     return redirect(url_for('admin.manageitem'))
                 except Exception as e:
+                    connection.rollback()
                     error_item = f"Database error: {str(e)}"
 
-        # Get active items
+        # Get categories
+        cursor.execute("SELECT category_id, category_name FROM categories")
+        categories = cursor.fetchall()
+
+        # Get items
         cursor.execute("""
-            SELECT items.item_id, items.item_name, items.price, items.image, items.category_id, categories.category_name
-            FROM items
-            LEFT JOIN categories ON items.category_id = categories.category_id
-            WHERE items.is_archived = 0
+            SELECT i.item_id, i.item_name, i.price, i.image, 
+                   i.category_id, c.category_name, i.is_archived
+            FROM items i
+            LEFT JOIN categories c ON i.category_id = c.category_id
+            ORDER BY i.is_archived, i.item_name
         """)
-        active_items = cursor.fetchall()
+        
+        items = cursor.fetchall()
+        
+        # Process items
+        def process_item(item):
+            item_id, name, price, image, cat_id, cat_name, is_archived = item
+            image_base64 = base64.b64encode(image).decode('utf-8') if image else None
+            return (item_id, name, price, image_base64, cat_id, cat_name or "Uncategorized")
 
-        # Get archived items
-        cursor.execute("""
-            SELECT items.item_id, items.item_name, items.price, items.image, items.category_id, categories.category_name
-            FROM items
-            LEFT JOIN categories ON items.category_id = categories.category_id
-            WHERE items.is_archived = 1
-        """)
-        archived_items = cursor.fetchall()
-
-        # Process both
-        def process_items(raw_items):
-            result = []
-            for item in raw_items:
-                item_id, item_name, price, image_data, category_id, category_name = item
-                image_base64 = base64.b64encode(image_data).decode('utf-8') if image_data else None
-                result.append((item_id, item_name, price, image_base64, category_id, category_name or "Uncategorized"))
-            return result
-
-        processed_active = process_items(active_items)
-        processed_archived = process_items(archived_items)
-
-        cursor.close()
-        connection.close()
+        active_items = [process_item(item) for item in items if not item[6]]
+        archived_items = [process_item(item) for item in items if item[6]]
 
     except Exception as e:
-        error_item = f"Unexpected error: {str(e)}"
-        processed_active = []
-        processed_archived = []
-        categories = []
+        error_item = f"Database error: {str(e)}"
+        if 'connection' in locals() and connection:
+            connection.rollback()
+    finally:
+        if 'cursor' in locals() and cursor:
+            cursor.close()
+        if 'connection' in locals() and connection:
+            connection.close()
 
     return render_template(
         "mitems.html",
-        items=processed_active,
-        archived_items=processed_archived,
+        items=active_items,
+        archived_items=archived_items,
         categories=categories,
         error_item=error_item,
         error_price=error_price,
         error_image=error_image
     )
 
-
 @admin.route('/archive-item/<int:item_id>')
 def archive_item(item_id):
     if 'admin' not in session:
         return redirect(url_for('admin.login'))
 
-    connection = connect_db()
-    cursor = connection.cursor()
     try:
-        cursor.execute("UPDATE items SET is_archived = TRUE WHERE item_id = %s", (item_id,))
+        connection = connect_db()
+        cursor = connection.cursor()
+        cursor.execute("UPDATE items SET is_archived = 1 WHERE item_id = %s", (item_id,))
         connection.commit()
-        flash("Item archived successfully.", "success")
+        flash(f"Item ID {item_id} archived successfully.", "success")
     except Exception as e:
         flash(f"Error archiving item: {str(e)}", "danger")
+        if connection:
+            connection.rollback()
     finally:
-        cursor.close()
-        connection.close()
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
 
     return redirect(url_for('admin.manageitem'))
-
 
 @admin.route('/restore-item/<int:item_id>')
 def restore_item(item_id):
@@ -646,17 +638,18 @@ def restore_item(item_id):
         cursor = connection.cursor()
         cursor.execute("UPDATE items SET is_archived = 0 WHERE item_id = %s", (item_id,))
         connection.commit()
-        flash("Item has been successfully restored.", "success")
+        flash(f"Item ID {item_id} restored successfully.", "success")
     except Exception as e:
-        print("Error restoring item:", e)
-        flash("Failed to restore item.", "danger")
+        flash(f"Error restoring item: {str(e)}", "danger")
+        if connection:
+            connection.rollback()
     finally:
-        cursor.close()
-        connection.close()
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
 
     return redirect(url_for('admin.manageitem'))
-
-
 
 @admin.route('/edit-item/<int:item_id>', methods=['POST'])
 def edit_item(item_id):

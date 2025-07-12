@@ -5,9 +5,6 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
 
-
-
-
 <style>
     body {
         background-color: #0d1117;
@@ -15,7 +12,7 @@
         font-family: 'Orbitron', sans-serif;
     }
 
-    h2, h4 {
+    h2, h4, h5 {
         color: #00ffff;
         text-shadow: 0 0 5px #00ffff;
     }
@@ -25,6 +22,12 @@
         border: none;
         box-shadow: 0 0 15px rgba(0, 255, 255, 0.15);
         color: #e0e0e0;
+        margin-bottom: 1.5rem;
+    }
+
+    .card-header {
+        background: linear-gradient(to right, #111827, #1a1f2e);
+        border-bottom: 1px solid #00ffff50;
     }
 
     .form-label {
@@ -118,8 +121,6 @@
         color: #00ffff88;
     }
 
-   
-
     .modal-content {
         background-color: #1f2937;
         color: #00ffff;
@@ -132,198 +133,271 @@
         box-shadow: 0 0 10px rgba(0, 255, 255, 0.15);
     }
 
-</style>
+    /* Archived items */
+    .archived-item {
+        opacity: 0.7;
+    }
+    
+    .archived-item:hover {
+        opacity: 1;
+    }
 
+    /* Image thumbnails */
+    .img-thumbnail {
+        max-width: 80px;
+        max-height: 80px;
+        background-color: #0f172a;
+        border: 1px solid #00ffff50;
+    }
+
+    /* Action buttons */
+    .action-buttons {
+        min-width: 180px;
+    }
+
+    .btn-group .btn {
+        margin-right: 0.5rem;
+    }
+
+    /* Card header colors */
+    .bg-primary {
+        background: linear-gradient(to right, #0077ff, #00aaff) !important;
+    }
+
+    .bg-success {
+        background: linear-gradient(to right, #00aa77, #00cc88) !important;
+    }
+
+    .bg-secondary {
+        background: linear-gradient(to right, #555577, #777799) !important;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .input-group {
+            width: 100% !important;
+            margin-top: 1rem;
+        }
+        
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .btn-group .btn {
+            margin-bottom: 0.5rem;
+            margin-right: 0;
+        }
+    }
+</style>
 {% endblock %}
 
-
-
-
-
 {% block content %}
-<h2 class="text-center mb-4">Manage Items</h2>
-
-<!-- Flashed Messages -->
-{% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    {% for category, message in messages %}
-      <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-        {{ message }}
-      </div>
-    {% endfor %}
-  {% endif %}
-{% endwith %}
-
-<!-- Add Item Form -->
-<div class="card p-4 shadow mb-4">
-    <h4>Add New Item</h4>
-    <form action="{{ url_for('admin.manageitem') }}" method="POST" enctype="multipart/form-data">
-        <div class="mb-3">
-            <label class="form-label">Item Name:</label>
-            <input type="text" name="name" class="form-control {% if error_item %}is-invalid{% endif %}" value="{{ request.form.name if not success_message else '' }}">
-            {% if error_item %}
-                <div class="invalid-feedback">
-                    {{ error_item }}
+<div class="container-fluid py-4">
+    <h2 class="text-center mb-4">Manage Menu Items</h2>
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
-            {% endif %}
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <!-- Add Item Form -->
+    <div class="card p-4 shadow">
+        <div class="card-header">
+            <h4>Add New Item</h4>
         </div>
-
-        <div class="mb-3">
-            <label class="form-label">Price:</label>
-            <input type="number" step="0.01" name="price" class="form-control {% if error_price %}is-invalid{% endif %}" value="{{ request.form.price if not success_message else '' }}">
-            {% if error_price %}
-                <div class="invalid-feedback">
-                    {{ error_price }}
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Item Name</label>
+                        <input type="text" name="name" class="form-control {% if error_item %}is-invalid{% endif %}" 
+                               value="{{ request.form.name if request.form.name }}" required>
+                        {% if error_item %}
+                            <div class="invalid-feedback">{{ error_item }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label">Price</label>
+                        <input type="number" step="0.01" name="price" 
+                               class="form-control {% if error_price %}is-invalid{% endif %}" 
+                               value="{{ request.form.price if request.form.price }}" required>
+                        {% if error_price %}
+                            <div class="invalid-feedback">{{ error_price }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label">Category</label>
+                        <select name="category_id" class="form-select" required>
+                            <option value="">Select Category</option>
+                            {% for cat in categories %}
+                                <option value="{{ cat[0] }}" {% if request.form.category_id == cat[0]|string %}selected{% endif %}>
+                                    {{ cat[1] }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label">Item Image</label>
+                        <input type="file" name="image" class="form-control {% if error_image %}is-invalid{% endif %}" accept="image/*" required>
+                        {% if error_image %}
+                            <div class="invalid-feedback">{{ error_image }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus-circle me-2"></i>Add Item
+                        </button>
+                    </div>
                 </div>
-            {% endif %}
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Category:</label>
-            <select name="category_id" class="form-select">
-                <option disabled {% if not request.form.category_id or success_message %}selected{% endif %}>Choose category...</option>
-                {% for cat in categories %}
-                    <option value="{{ cat[0] }}" {% if request.form.category_id == cat[0]|string and not success_message %}selected{% endif %}>
-                        {{ cat[1] }}
-                    </option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Upload Image:</label>
-            <input type="file" name="image" class="form-control {% if error_image %}is-invalid{% endif %}">
-            {% if error_image %}
-                <div class="invalid-feedback">
-                    {{ error_image }}
-                </div>
-            {% endif %}
-        </div>
-
-        <button type="submit" class="btn btn-primary">Add Item</button>
-    </form>
-</div>
-
-<!-- Item List -->
-<div class="card p-4 shadow">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4>Item List</h4>
-        <div class="input-group w-25">
-            <span class="input-group-text"><i class="fas fa-search"></i></span>
-            <input type="text" id="itemSearch" class="form-control" placeholder="Search items...">
+            </form>
         </div>
     </div>
-    <table class="table table-bordered table-striped">
-        <thead class="table-dark">
-            <tr>
-                <th>Item Name</th>
-                <th>Price</th>
-                <th>Category</th>
-                <th>Image</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody id="itemTableBody">
-            {% for item in items %}
-            <tr>
-                <td>{{ item[1] }}</td>
-                <td>₱{{ item[2] }}</td>
-                <td>{{ item[5] }}</td>
-                <td>
-                    {% if item[3] %}
-                        <img src="data:image/jpeg;base64,{{ item[3] }}" width="50" height="50" alt="Item Image">
-                    {% else %}
-                        No Image
-                    {% endif %}
-                </td>
-                <td>
-                    <button type="button" class="btn btn-warning btn-sm me-1" data-bs-toggle="modal" data-bs-target="#editModal{{ item[0] }}">Edit</button>
-                    <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#archiveModal{{ item[0] }}">Archive</button>
-
-                    <!-- Archive Modal -->
-                    <div class="modal fade" id="archiveModal{{ item[0] }}" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title">Confirm Archive</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                </div>
-                                <div class="modal-body">
-                                    Are you sure you want to archive <strong>{{ item[1] }}</strong>?
-                                </div>
-                                <div class="modal-footer">
-                                    <a href="{{ url_for('admin.archive_item', item_id=item[0]) }}" class="btn btn-danger">Archive</a>
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Edit Modal (same as your code) -->
-                    <!-- Keep as is -->
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <!-- Archived Items -->
-    <div class="card p-4 shadow mt-5">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4>Archived Items</h4>
-            <div class="input-group w-25">
-                <span class="input-group-text"><i class="fas fa-search"></i></span>
-                <input type="text" id="archivedItemSearch" class="form-control" placeholder="Search archived items...">
+    
+    <!-- Active Items -->
+    <div class="card p-4 shadow">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4>Active Menu Items</h4>
+                <div class="input-group" style="width: 300px;">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" id="searchActive" class="form-control" placeholder="Search active items...">
+                </div>
             </div>
         </div>
-        <table class="table table-bordered table-striped">
-            <thead class="table-secondary">
-                <tr>
-                    <th>Item Name</th>
-                    <th>Price</th>
-                    <th>Category</th>
-                    <th>Image</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="archivedItemTableBody">
-                {% for item in archived_items %}
-                <tr>
-                    <td>{{ item[1] }}</td>
-                    <td>₱{{ item[2] }}</td>
-                    <td>{{ item[5] }}</td>
-                    <td>
-                        {% if item[3] %}
-                            <img src="data:image/jpeg;base64,{{ item[3] }}" width="50" height="50" alt="Item Image">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Image</th>
+                            <th>Name</th>
+                            <th>Price</th>
+                            <th>Category</th>
+                            <th class="action-buttons">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="activeItemsTable">
+                        {% for item in items %}
+                        <tr>
+                            <td>
+                                {% if item[3] %}
+                                    <img src="data:image/jpeg;base64,{{ item[3] }}" class="img-thumbnail">
+                                {% else %}
+                                    <span class="text-muted">No Image</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ item[1] }}</td>
+                            <td>₱{{ "%.2f"|format(item[2]) }}</td>
+                            <td>{{ item[5] }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-warning btn-sm" data-bs-toggle="modal" 
+                                            data-bs-target="#editModal{{ item[0] }}">
+                                        <i class="fas fa-edit me-1"></i>Edit
+                                    </button>
+                                    <a href="{{ url_for('admin.archive_item', item_id=item[0]) }}" 
+                                       class="btn btn-danger btn-sm" 
+                                       onclick="return confirm('Archive this item?')">
+                                        <i class="fas fa-archive me-1"></i>Archive
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
                         {% else %}
-                            No Image
-                        {% endif %}
-                    </td>
-                    <td>
-                        <a href="{{ url_for('admin.restore_item', item_id=item[0]) }}" class="btn btn-success btn-sm">Restore</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                        <tr>
+                            <td colspan="5" class="text-center py-4">No active items found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Archived Items -->
+    <div class="card p-4 shadow">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4>Archived Items</h4>
+                <div class="input-group" style="width: 300px;">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" id="searchArchived" class="form-control" placeholder="Search archived items...">
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Image</th>
+                            <th>Name</th>
+                            <th>Price</th>
+                            <th>Category</th>
+                            <th class="action-buttons">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="archivedItemsTable">
+                        {% for item in archived_items %}
+                        <tr class="archived-item">
+                            <td>
+                                {% if item[3] %}
+                                    <img src="data:image/jpeg;base64,{{ item[3] }}" class="img-thumbnail">
+                                {% else %}
+                                    <span class="text-muted">No Image</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ item[1] }}</td>
+                            <td>₱{{ "%.2f"|format(item[2]) }}</td>
+                            <td>{{ item[5] }}</td>
+                            <td>
+                                <a href="{{ url_for('admin.restore_item', item_id=item[0]) }}" 
+                                   class="btn btn-success btn-sm"
+                                   onclick="return confirm('Restore this item?')">
+                                    <i class="fas fa-undo me-1"></i>Restore
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4">No archived items found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 
-<!-- JavaScript Search -->
+<!-- JavaScript -->
 <script>
-document.getElementById("itemSearch").addEventListener("keyup", function () {
-    const filter = this.value.toLowerCase();
-    document.querySelectorAll("#itemTableBody tr").forEach(row => {
-        const text = row.innerText.toLowerCase();
-        row.style.display = text.includes(filter) ? "" : "none";
+// Search functionality
+document.getElementById('searchActive').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    document.querySelectorAll('#activeItemsTable tr').forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
     });
 });
 
-document.getElementById("archivedItemSearch").addEventListener("keyup", function () {
-    const filter = this.value.toLowerCase();
-    document.querySelectorAll("#archivedItemTableBody tr").forEach(row => {
-        const text = row.innerText.toLowerCase();
-        row.style.display = text.includes(filter) ? "" : "none";
+document.getElementById('searchArchived').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    document.querySelectorAll('#archivedItemsTable tr').forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
     });
 });
 </script>
