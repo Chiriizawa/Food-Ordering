@@ -10,7 +10,23 @@
 {% block content %}
 <body class="bg-[#898989]">
 <div class="bg-[#898989] max-w-7xl mx-auto px-4 py-10">  
-    <h1 class="text-3xl font-bold text-center mb-8 text-white">My Orders</h1>
+    <div class="flex justify-between items-center mb-8">
+        <div class="relative">
+            <select id="status-filter" class="appearance-none bg-gray-700 border border-gray-600 text-white py-2 pl-4 pr-8 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                <option value="all">All Statuses</option>
+                <option value="Pending">Pending</option>
+                <option value="Processing">Processing</option>
+                <option value="Completed">Completed</option>
+                <option value="Cancelled">Cancelled</option>
+                <option value="Reviewed">Reviewed</option>
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+                </svg>
+            </div>
+        </div>
+    </div>
     <div id="orders-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
 </div>
 
@@ -72,6 +88,7 @@
 let currentReviewOrderId = null;
 let currentRating = 0;
 let currentCancelOrderId = null;
+let allOrders = [];
 
 function openReviewModal(orderId) {
     currentReviewOrderId = orderId;
@@ -113,76 +130,101 @@ function openCancelOrderModal(orderId, items) {
     };
 }
 
+function renderOrders(orders) {
+    const container = document.getElementById('orders-container');
+    container.innerHTML = '';
+    
+    if (orders.length === 0) {
+        container.innerHTML = `<p class="text-gray-500 col-span-full text-center py-10">No orders found.</p>`;
+        return;
+    }
+
+    orders.forEach(order => {
+        let itemsHtml = '', total = 0;
+        order.items.forEach(item => {
+            const sub = item.price * item.quantity;
+            total += sub;
+            itemsHtml += `<div class="flex gap-3 py-3 border-b border-gray-300">
+                <div class="w-16 h-16 bg-gray-300 rounded-md overflow-hidden">
+                    ${item.image ? `<img src="data:image/jpeg;base64,${item.image}" class="object-cover w-full h-full">` :
+                    `<div class="w-full h-full flex items-center justify-center text-gray-500 text-sm">No Image</div>`}
+                </div>
+                <div class="flex-grow">
+                    <p class="font-medium text-gray-800">${item.name}</p>
+                    <p class="text-sm text-gray-600">₱${item.price.toFixed(2)} × ${item.quantity}</p>
+                    <p class="text-sm font-medium text-gray-700">Subtotal: ₱${sub.toFixed(2)}</p>
+                </div>
+            </div>`;
+        });
+
+        const statusClasses = {
+            'Pending': 'text-yellow-900',
+            'Completed': 'text-green-900',
+            'Processing': 'text-yellow-700',
+            'Cancelled': 'text-red-500',
+            'Reviewed': 'text-blue-500'
+        };
+
+        const card = document.createElement('div');
+        card.className = 'bg-gray-400 shadow-md rounded-lg p-4 flex flex-col';
+        card.innerHTML = `
+            <div class="flex justify-between mb-3">
+                <p class="text-sm text-black">${new Date(order.ordered_at).toLocaleString()}</p>
+                <span class="text-sm font-semibold ${statusClasses[order.status] || 'text-gray-500'}">${order.status}</span>
+            </div>
+            <div><h3 class="font-semibold text-yellow-900 text-base mb-2">Items</h3>${itemsHtml}</div>
+            <div class="border-t border-gray-300 mt-4 pt-2">
+                <div class="flex justify-between mb-2">
+                    <span class="font-semibold text-gray-800">Total:</span>
+                    <span class="font-bold text-gray-900">₱${total.toFixed(2)}</span>
+                </div>
+                <div class="space-y-2 mt-2">
+                    ${['Pending', 'Approved'].includes(order.status) ? 
+                    `<button onclick="openCancelOrderModal(${order.order_id}, ${JSON.stringify(order.items).replace(/"/g, '&quot;')})"
+                        class="w-full py-2 bg-red-500 hover:bg-red-600 text-white rounded-md">Cancel Order</button>` : ''}
+
+                    ${order.status === 'Completed' && !order.reviewed ? `
+                        <button onclick="openReviewModal(${order.order_id})"
+                            class="w-full py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md" id="review-btn-${order.order_id}">
+                            Leave a Review
+                        </button>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     const reasonSelect = document.getElementById('reason-select');
     const otherReason = document.getElementById('other-reason');
+    const statusFilter = document.getElementById('status-filter');
 
     reasonSelect.addEventListener('change', () => {
         otherReason.classList.toggle('hidden', reasonSelect.value !== 'Others');
     });
 
+    statusFilter.addEventListener('change', () => {
+        const selectedStatus = statusFilter.value;
+        if (selectedStatus === 'all') {
+            renderOrders(allOrders);
+        } else {
+            const filteredOrders = allOrders.filter(order => order.status === selectedStatus);
+            renderOrders(filteredOrders);
+        }
+    });
+
     fetch('/api/myorders')
         .then(res => res.json())
         .then(data => {
-            const container = document.getElementById('orders-container');
-            if (data.error) return container.innerHTML = `<p class="text-red-500">${data.error}</p>`;
-            if (data.orders.length === 0) return container.innerHTML = `<p class="text-gray-500">No orders found.</p>`;
-
-            data.orders.forEach(order => {
-                let itemsHtml = '', total = 0;
-                order.items.forEach(item => {
-                    const sub = item.price * item.quantity;
-                    total += sub;
-                    itemsHtml += `<div class="flex gap-3 py-3 border-b border-gray-300">
-                        <div class="w-16 h-16 bg-gray-300 rounded-md overflow-hidden">
-                            ${item.image ? `<img src="data:image/jpeg;base64,${item.image}" class="object-cover w-full h-full">` :
-                            `<div class="w-full h-full flex items-center justify-center text-gray-500 text-sm">No Image</div>`}
-                        </div>
-                        <div class="flex-grow">
-                            <p class="font-medium text-gray-800">${item.name}</p>
-                            <p class="text-sm text-gray-600">₱${item.price.toFixed(2)} × ${item.quantity}</p>
-                            <p class="text-sm font-medium text-gray-700">Subtotal: ₱${sub.toFixed(2)}</p>
-                        </div>
-                    </div>`;
-                });
-
-                const statusClasses = {
-                    'Pending': 'text-yellow-900',
-                    'Completed': 'text-green-900',
-                    'Processing': 'text-yellow-700',
-                    'Cancelled': 'text-red-500',
-                    'Reviewed': 'text-blue-500'
-                };
-
-                const card = document.createElement('div');
-                card.className = 'bg-gray-400 shadow-md rounded-lg p-4 flex flex-col';
-                card.innerHTML = `
-                    <div class="flex justify-between mb-3">
-                        <p class="text-sm text-black">${new Date(order.ordered_at).toLocaleString()}</p>
-                        <span class="text-sm font-semibold ${statusClasses[order.status] || 'text-gray-500'}">${order.status}</span>
-                    </div>
-                    <div><h3 class="font-semibold text-yellow-900 text-base mb-2">Items</h3>${itemsHtml}</div>
-                    <div class="border-t border-gray-300 mt-4 pt-2">
-                        <div class="flex justify-between mb-2">
-                            <span class="font-semibold text-gray-800">Total:</span>
-                            <span class="font-bold text-gray-900">₱${total.toFixed(2)}</span>
-                        </div>
-                        <div class="space-y-2 mt-2">
-                            ${['Pending', 'Approved'].includes(order.status) ? 
-                            `<button onclick="openCancelOrderModal(${order.order_id}, ${JSON.stringify(order.items).replace(/"/g, '&quot;')})"
-                                class="w-full py-2 bg-red-500 hover:bg-red-600 text-white rounded-md">Cancel Order</button>` : ''}
-
-                            ${order.status === 'Completed' && !order.reviewed ? `
-                                <button onclick="openReviewModal(${order.order_id})"
-                                    class="w-full py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md" id="review-btn-${order.order_id}">
-                                    Leave a Review
-                                </button>
-                            ` : ''}
-                        </div>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
+            if (data.error) {
+                document.getElementById('orders-container').innerHTML = `<p class="text-red-500">${data.error}</p>`;
+                return;
+            }
+            
+            allOrders = data.orders;
+            renderOrders(allOrders);
         });
 
     document.getElementById('submit-review').onclick = () => {

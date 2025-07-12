@@ -32,36 +32,85 @@
         </table>
     </div>
 
-    <!-- Button to open modal -->
-    <div class="text-center">
-        <button onclick="openModal()"
-                class="px-5 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+    <!-- Horizontally aligned buttons -->
+    <div class="flex justify-center gap-4 mt-6">
+        <button onclick="openModal()" class="px-5 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
             Change Profile Picture
+        </button>
+        <button onclick="openEditModal()" class="px-5 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
+            Edit Account Details
         </button>
     </div>
 </div>
 
-<!-- Modal -->
+<!-- Upload Image Modal -->
 <div id="uploadModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
     <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md relative">
         <button onclick="closeModal()" class="absolute top-2 right-3 text-xl font-bold text-gray-600 hover:text-black">&times;</button>
         <h3 class="text-xl font-semibold mb-4 text-center">Upload New Profile Picture</h3>
 
         <form action="{{ url_for('customer.upload_image') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
-            <input type="file" name="profile_image" accept="image/*" required
-                   class="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4
-                          file:rounded-full file:border-0 file:text-sm file:font-semibold
-                          file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+            <input type="file" name="profile_image" accept="image/*" required class="block w-full text-sm text-gray-700 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="closeModal()" class="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Upload</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Account Modal -->
+<div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-lg relative">
+        <button onclick="closeEditModal()" class="absolute top-2 right-3 text-xl font-bold text-gray-600 hover:text-black">&times;</button>
+        <h3 class="text-xl font-semibold mb-4 text-center">Edit Account Details</h3>
+
+        <form action="{{ url_for('customer.update_account') }}" method="POST" class="space-y-4">
+            <div><label class="block text-sm font-medium text-gray-700">First Name</label>
+                <input type="text" name="first_name" value="{{ customer.first_name }}" required class="w-full border px-3 py-2 rounded">
+            </div>
+            <div><label class="block text-sm font-medium text-gray-700">Middle Name</label>
+                <input type="text" name="middle_name" value="{{ customer.middle_name or '' }}" class="w-full border px-3 py-2 rounded">
+            </div>
+            <div><label class="block text-sm font-medium text-gray-700">Last Name</label>
+                <input type="text" name="last_name" value="{{ customer.last_name }}" required class="w-full border px-3 py-2 rounded">
+            </div>
+            <div><label class="block text-sm font-medium text-gray-700">Email</label>
+                <input type="email" name="email" value="{{ customer.email }}" required class="w-full border px-3 py-2 rounded">
+            </div>
+            <div><label class="block text-sm font-medium text-gray-700">Contact</label>
+                <input type="text" name="contact" value="{{ customer.contact }}" maxlength="11" required class="w-full border px-3 py-2 rounded">
+            </div>
+
+            <!-- Region/Province/Municipality/Barangay -->
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Region</label>
+                    <select id="regionSelect" class="form-select w-full px-2 py-2 border rounded"></select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Province</label>
+                    <select id="provinceSelect" class="form-select w-full px-2 py-2 border rounded"></select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Municipality</label>
+                    <select id="municipalitySelect" class="form-select w-full px-2 py-2 border rounded"></select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Barangay</label>
+                    <select id="barangaySelect" class="form-select w-full px-2 py-2 border rounded"></select>
+                </div>
+            </div>
+
+            <!-- Hidden fields -->
+            <input type="hidden" name="region" id="regionInput">
+            <input type="hidden" name="province" id="provinceInput">
+            <input type="hidden" name="municipality" id="municipalityInput">
+            <input type="hidden" name="barangay" id="barangayInput">
 
             <div class="flex justify-end gap-2">
-                <button type="button" onclick="closeModal()"
-                        class="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400">
-                    Cancel
-                </button>
-                <button type="submit"
-                        class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                    Upload
-                </button>
+                <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Save Changes</button>
             </div>
         </form>
     </div>
@@ -77,5 +126,79 @@
         document.getElementById('uploadModal').classList.remove('flex');
         document.getElementById('uploadModal').classList.add('hidden');
     }
+
+    function openEditModal() {
+        document.getElementById('editModal').classList.remove('hidden');
+        document.getElementById('editModal').classList.add('flex');
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').classList.remove('flex');
+        document.getElementById('editModal').classList.add('hidden');
+    }
+
+    let regionsData;
+    fetch("{{ url_for('static', filename='data/cluster.json') }}")
+        .then(res => res.json())
+        .then(data => {
+            regionsData = data;
+
+            const regionSelect = document.getElementById("regionSelect");
+            regionSelect.innerHTML = `<option value="" disabled>Select Region</option>`;
+            for (const code in data) {
+                const region = data[code];
+                regionSelect.innerHTML += `<option value="${code}" ${code === '{{ customer.region }}' ? 'selected' : ''}>${region.region_name}</option>`;
+            }
+
+            regionSelect.dispatchEvent(new Event('change'));
+        });
+
+    document.getElementById("regionSelect").addEventListener("change", () => {
+        const region = document.getElementById("regionSelect").value;
+        const provinceSelect = document.getElementById("provinceSelect");
+        provinceSelect.innerHTML = `<option value="" disabled>Select Province</option>`;
+
+        const provinces = regionsData[region]?.province_list || {};
+        for (const name in provinces) {
+            provinceSelect.innerHTML += `<option value="${name}" ${name === '{{ customer.province }}' ? 'selected' : ''}>${name}</option>`;
+        }
+
+        document.getElementById("municipalitySelect").innerHTML = `<option value="" disabled>Select Municipality</option>`;
+        document.getElementById("barangaySelect").innerHTML = `<option value="" disabled>Select Barangay</option>`;
+        provinceSelect.dispatchEvent(new Event('change'));
+    });
+
+    document.getElementById("provinceSelect").addEventListener("change", () => {
+        const region = document.getElementById("regionSelect").value;
+        const province = document.getElementById("provinceSelect").value;
+        const municipalities = regionsData[region]?.province_list[province]?.municipality_list || {};
+        const municipalitySelect = document.getElementById("municipalitySelect");
+        municipalitySelect.innerHTML = `<option value="" disabled>Select Municipality</option>`;
+        for (const name in municipalities) {
+            municipalitySelect.innerHTML += `<option value="${name}" ${name === '{{ customer.municipality }}' ? 'selected' : ''}>${name}</option>`;
+        }
+
+        document.getElementById("barangaySelect").innerHTML = `<option value="" disabled>Select Barangay</option>`;
+        municipalitySelect.dispatchEvent(new Event('change'));
+    });
+
+    document.getElementById("municipalitySelect").addEventListener("change", () => {
+        const region = document.getElementById("regionSelect").value;
+        const province = document.getElementById("provinceSelect").value;
+        const municipality = document.getElementById("municipalitySelect").value;
+        const barangays = regionsData[region]?.province_list[province]?.municipality_list[municipality]?.barangay_list || [];
+        const barangaySelect = document.getElementById("barangaySelect");
+        barangaySelect.innerHTML = `<option value="" disabled>Select Barangay</option>`;
+        barangays.forEach(name => {
+            barangaySelect.innerHTML += `<option value="${name}" ${name === '{{ customer.barangay }}' ? 'selected' : ''}>${name}</option>`;
+        });
+    });
+
+    document.querySelector("#editModal form").addEventListener("submit", () => {
+        document.getElementById("regionInput").value = document.getElementById("regionSelect").value;
+        document.getElementById("provinceInput").value = document.getElementById("provinceSelect").value;
+        document.getElementById("municipalityInput").value = document.getElementById("municipalitySelect").value;
+        document.getElementById("barangayInput").value = document.getElementById("barangaySelect").value;
+    });
 </script>
 {% endblock %}

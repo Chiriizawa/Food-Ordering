@@ -209,13 +209,39 @@
     </div>
 </div>
 
+<!-- Cancel Order Modal with Reason Selection -->
 <div id="cancel-order-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden z-50 modal-container">
-    <div class="bg-white p-6 rounded-lg max-w-sm w-full mx-4">
-        <h2 class="text-xl font-bold text-center mb-4">Confirm Order Cancellation</h2>
-        <p class="text-gray-600 mb-6">Are you sure you want to cancel this order?</p>
-        <div class="flex justify-between space-x-4">
-            <button id="confirm-cancel-button" class="w-full py-2 bg-red-500 text-white rounded-md hover:bg-red-600">Cancel Order</button>
-            <button id="close-cancel-modal" class="w-full py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500">Keep Order</button>
+    <div class="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+        <h2 class="text-xl font-bold text-center mb-4">Cancel Order</h2>
+        <div class="mb-6">
+            <h3 class="font-medium text-gray-700 mb-1">Reason for cancellation</h3>
+            <p class="text-sm text-gray-500 mb-3">Please select a reason</p>
+            <select id="reason-select" class="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-red-500">
+                <option value="" disabled selected>Select a reason</option>
+                <option value="Changed my mind">Changed my mind</option>
+                <option value="Ordered by mistake">Ordered by mistake</option>
+                <option value="Found a better deal">Found a better deal</option>
+                <option value="Item was unavailable">Item was unavailable</option>
+                <option value="Change of plans">Change of plans</option>
+                <option value="Payment problem">Payment problem</option>
+                <option value="Allergy or dietary concern">Allergy or dietary concern</option>
+                <option value="Others">Others</option>
+            </select>
+            <textarea id="other-reason" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 hidden" placeholder="Enter your reason here..."></textarea>
+        </div>
+        
+        <div class="border-t border-gray-200 pt-4">
+            <h3 class="font-medium text-gray-700 mb-2">Order Summary</h3>
+            <div id="order-summary" class="text-sm text-gray-600 mb-4"></div>
+        </div>
+
+        <div class="flex flex-col space-y-3 mt-6">
+            <button id="confirm-cancel-button" class="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition duration-200">
+                Confirm Cancellation
+            </button>
+            <button id="close-cancel-modal" class="w-full py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition duration-200">
+                Go Back
+            </button>
         </div>
     </div>
 </div>
@@ -535,15 +561,9 @@ function showOrderModal(order) {
             // The complete button (accept-order-button) should be enabled by default, so we do nothing to it.
             break;
         case 'Completed':
-            // Disable all action buttons for completed orders
-            [acceptBtn, processingBtn, cancelBtn].forEach(btn => {
-                btn.classList.add('disabled-btn', 'opacity-50', 'cursor-not-allowed');
-                btn.disabled = true;
-            });
-            break;
         case 'Cancelled':
-            // Disable accept and processing buttons for cancelled orders
-            [acceptBtn, processingBtn].forEach(btn => {
+            // Disable all action buttons for completed or cancelled orders
+            [acceptBtn, processingBtn, cancelBtn].forEach(btn => {
                 btn.classList.add('disabled-btn', 'opacity-50', 'cursor-not-allowed');
                 btn.disabled = true;
             });
@@ -650,6 +670,21 @@ document.getElementById('confirm-processing-button').addEventListener('click', (
 // Cancel order modal open/close and confirm
 document.getElementById('cancel-order-button').addEventListener('click', () => {
     if (!currentOrder || document.getElementById('cancel-order-button').disabled) return;
+    
+    // Show order summary in cancel modal
+    const summary = currentOrder.items.map(item => 
+        `<div class="flex justify-between">
+            <span>${item.name} × ${item.quantity}</span>
+            <span>₱${(item.price * item.quantity).toFixed(2)}</span>
+        </div>`).join('');
+    
+    document.getElementById('order-summary').innerHTML = summary;
+    
+    // Reset reason select
+    document.getElementById('reason-select').value = '';
+    document.getElementById('other-reason').value = '';
+    document.getElementById('other-reason').classList.add('hidden');
+    
     document.getElementById('cancel-order-modal').classList.remove('hidden');
 });
 
@@ -657,11 +692,31 @@ document.getElementById('close-cancel-modal').addEventListener('click', () => {
     document.getElementById('cancel-order-modal').classList.add('hidden');
 });
 
+// Handle reason select change
+document.getElementById('reason-select').addEventListener('change', function() {
+    const otherReasonField = document.getElementById('other-reason');
+    if (this.value === 'Others') {
+        otherReasonField.classList.remove('hidden');
+    } else {
+        otherReasonField.classList.add('hidden');
+    }
+});
+
 document.getElementById('confirm-cancel-button').addEventListener('click', () => {
     if (!currentOrder) return;
-    const reason = prompt('Please enter the reason for cancellation:');
-    if (reason === null || reason.trim() === '') {
-        alert('Cancellation reason is required.');
+    
+    const reasonSelect = document.getElementById('reason-select');
+    const otherReason = document.getElementById('other-reason').value.trim();
+    
+    let cancellationReason = '';
+    if (reasonSelect.value === 'Others') {
+        cancellationReason = otherReason;
+    } else {
+        cancellationReason = reasonSelect.value;
+    }
+    
+    if (!cancellationReason) {
+        alert('Please select or enter a cancellation reason.');
         return;
     }
 
@@ -670,7 +725,7 @@ document.getElementById('confirm-cancel-button').addEventListener('click', () =>
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ 
             order_id: currentOrder.order_id, 
-            reason: reason.trim() 
+            reason: cancellationReason 
         })
     })
     .then(res => res.json())
@@ -687,6 +742,20 @@ document.getElementById('confirm-cancel-button').addEventListener('click', () =>
 });
 
 // Initial load
-document.addEventListener('DOMContentLoaded', loadOrders);
+document.addEventListener('DOMContentLoaded', function() {
+    loadOrders();
+    
+    // Set up event listeners for reason selection
+    const reasonSelect = document.getElementById('reason-select');
+    const otherReason = document.getElementById('other-reason');
+    
+    reasonSelect.addEventListener('change', function() {
+        if (this.value === 'Others') {
+            otherReason.classList.remove('hidden');
+        } else {
+            otherReason.classList.add('hidden');
+        }
+    });
+});
 </script>
 {% endblock %}

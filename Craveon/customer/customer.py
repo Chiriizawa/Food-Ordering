@@ -7,8 +7,6 @@ import random
 from flask_mail import Message
 from flask_bcrypt import Bcrypt
 
-asd
-
 customer = Blueprint('customer', __name__, template_folder="template") 
 
 bcrypt = Bcrypt()
@@ -359,7 +357,7 @@ def forgot_password():
             if not re.match(email_pattern, email):
                 email_error = "Invalid email format."
             else:
-                # Proceed to check if the email exists in the database
+                # Check if the email exists in the database
                 conn = connect_db()
                 cursor = conn.cursor(dictionary=True)
                 cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
@@ -370,7 +368,7 @@ def forgot_password():
                 if not user:
                     email_error = "Email not found. Please check your email."
                 else:
-                    # ✅ Save reset session data
+                    # Save reset session data
                     session["reset_user_id"] = user['user_id']
                     session["reset_email"] = email
                     session["reset_verification_code"] = str(random.randint(100000, 999999))
@@ -381,8 +379,11 @@ def forgot_password():
                     else:
                         email_error = "Failed to send verification email. Try again later."
 
-        response = make_response(render_template("forgotpassword.html", email_error=email_error))
-        return make_header(response)
+        # Return form with error (POST)
+        return make_header(make_response(render_template("forgotpassword.html", email_error=email_error)))
+
+    # Return form on GET
+    return make_header(make_response(render_template("forgotpassword.html", email_error=email_error)))
 
 
 @customer.route('/Verify-Reset', methods=['GET', 'POST'])
@@ -1237,8 +1238,73 @@ def submit_review():
         return jsonify({'error': 'You have already reviewed this order'}), 400
 
     cursor.execute("INSERT INTO reviews (order_id, rating, comment) VALUES (%s, %s, %s)",
-                   (order_id, rating, comment))
+                (order_id, rating, comment))
     cursor.execute("UPDATE orders SET reviewed = 1 WHERE order_id = %s", (order_id,))
     db.commit()
 
     return jsonify({'message': 'Thank you for your review!'})
+
+@customer.route('/update_account', methods=['POST'])
+def update_account():
+    if 'user' not in session:
+        return redirect(url_for('customer.login'))
+
+    user_id = session['user']
+    first_name = request.form.get('first_name', '').strip()
+    middle_name = request.form.get('middle_name', '').strip()
+    last_name = request.form.get('last_name', '').strip()
+    email = request.form.get('email', '').strip()
+    contact = request.form.get('contact', '').strip()
+
+    region = request.form.get('region', '').strip()
+    province = request.form.get('province', '').strip()
+    municipality = request.form.get('municipality', '').strip()
+    barangay = request.form.get('barangay', '').strip()
+
+    # Combine full address
+    address = f"{region}, {province}, {municipality}, {barangay}"
+
+    # Validation
+    errors = []
+    if not first_name:
+        errors.append("First name is required.")
+    if not last_name:
+        errors.append("Last name is required.")
+    if not email:
+        errors.append("Email is required.")
+    elif not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+        errors.append("Invalid email format.")
+    if not contact:
+        errors.append("Contact number is required.")
+    elif not contact.isdigit() or len(contact) != 11:
+        errors.append("Contact number must be 11 digits.")
+    if not region or not province or not municipality or not barangay:
+        errors.append("Complete address is required.")
+
+    if errors:
+        for error in errors:
+            flash(error, 'error')
+        return redirect(url_for('customer.account'))
+
+    # Update database
+    db = connect_db()
+    cursor = db.cursor()
+
+    cursor.execute("""
+        UPDATE users SET 
+            first_name = %s,
+            middle_name = %s,
+            last_name = %s,
+            email = %s,
+            contact = %s,
+            address = %s
+        WHERE user_id = %s
+    """, (first_name, middle_name, last_name, email, contact, address, user_id))
+
+    db.commit()
+    cursor.close()
+    db.close()
+
+    flash('Account updated successfully!', 'success')
+    return redirect(url_for('customer.account'))
+
