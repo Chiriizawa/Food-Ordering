@@ -7,6 +7,8 @@ import random
 from flask_mail import Message
 from flask_bcrypt import Bcrypt
 
+asd
+
 customer = Blueprint('customer', __name__, template_folder="template") 
 
 bcrypt = Bcrypt()
