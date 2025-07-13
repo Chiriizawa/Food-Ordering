@@ -5,45 +5,39 @@ body {
     color: #e0e0e0;
 }
 
-/* Sidebar */
-#sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100%;
-    width: 260px;
-    background: linear-gradient(to bottom, #111827, #0d1117);
-    box-shadow: 2px 0 12px rgba(0, 255, 255, 0.2);
-    z-index: 1040;
-    transition: transform 0.3s ease;
-    overflow-y: auto;
+/* base.css */
+
+/* Sidebar default styling */
+.sidebar {
+    width: 80px;
+    background-color: #111827;
+    transition: width 0.3s ease;
+    overflow-x: hidden;
 }
 
-#sidebar.collapsed {
-    transform: translateX(-100%);
+/* When hovered, expand sidebar */
+.sidebar.expanded {
+    width: 250px;
 }
 
-/* Sidebar links */
-#sidebar .nav-link {
-    color: #00ffff;
-    padding: 12px 16px;
-    transition: all 0.2s ease;
-    border-left: 3px solid transparent;
+/* Logo image animation */
+.sidebar img {
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    transform: scale(0.6);
+    opacity: 0;
+    max-width: 100%;
 }
 
-#sidebar .nav-link:hover {
-    background-color: rgba(0, 255, 255, 0.1);
-    border-left: 3px solid #00ffff;
-    text-shadow: 0 0 8px #00ffff;
+/* Expand image on hover */
+.sidebar.expanded img {
+    transform: scale(1);
+    opacity: 1;
 }
 
-#sidebar hr {
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
 
 /* Sidebar brand image */
 #sidebar .navbar-brand img {
-    filter: drop-shadow(0 0 5px #00ffff);
+    filter: drop-shadow(0 0 5px #747474);
 }
 
 /* Toggle button */
@@ -52,14 +46,14 @@ body {
     top: 20px;
     left: 20px;
     z-index: 1100;
-    background-color: #00ffff;
+    background-color: #8a8b8b;
     border: none;
     color: #0d1117;
     padding: 10px 14px;
     border-radius: 5px;
     font-size: 1.2rem;
     cursor: pointer;
-    box-shadow: 0 0 10px #00ffff;
+    box-shadow: 0 0 10px #c1c9c9;
 }
 
 /* Main content */
@@ -105,7 +99,7 @@ body {
 
 /* Sidebar links */
 #sidebar .nav-link {
-    color: #00ffff;
+    color: #95a3a3;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -129,8 +123,8 @@ body {
 
 #sidebar .nav-link:hover {
     background-color: rgba(0, 255, 255, 0.1);
-    border-left: 3px solid #00ffff;
-    text-shadow: 0 0 8px #00ffff;
+    border-left: 3px solid #a0b0b0;
+    text-shadow: 0 0 8px #b6c6c6;
 }
 
 /* Toggle Button (optional, for mobile only) */
