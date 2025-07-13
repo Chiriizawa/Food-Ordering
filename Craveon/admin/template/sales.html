@@ -1,16 +1,19 @@
 {% extends 'base.html' %}
 
 {% block head %}
-
-
 <title>Sales Report</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
-    body {
-        background-color: #0d1117;
+    html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
         font-family: 'Orbitron', sans-serif;
+        background: linear-gradient(#898989, #62db90);
+        background-attachment: fixed;
         color: #00ffff;
+        overflow-x: hidden;
     }
 
     h1, h2 {
@@ -18,18 +21,18 @@
         text-shadow: 0 0 6px #00ffffaa;
     }
 
-    select, .bg-white, .border {
-        background-color: #0f172a;
-        color: #00ffff;
-        border: 1px solid #00ffff80;
+    select, .border, .bg-white {
+        background-color: #0f172a !important;
+        color: #00ffff !important;
+        border: 1px solid #00ffff80 !important;
         border-radius: 8px;
-        box-shadow: 0 0 5px rgba(0, 255, 255, 0.1);
+        box-shadow: 0 0 5px rgba(0, 255, 255, 0.2);
     }
 
     select:focus {
         outline: none;
         border-color: #00ffff;
-        box-shadow: 0 0 8px #00ffff;
+        box-shadow: 0 0 10px #00ffff;
     }
 
     table {
@@ -37,47 +40,56 @@
         color: #00ffff;
         border-radius: 10px;
         overflow: hidden;
+        box-shadow: 0 0 15px rgba(0, 255, 255, 0.1);
     }
 
     thead {
-        background-color: #1f2937;
+        background-color: #111827;
         color: #00ffff;
     }
 
     tbody tr:nth-child(even) {
-        background-color: rgba(0, 255, 255, 0.05);
+        background-color: rgba(0, 255, 255, 0.03);
     }
 
-    tbody td {
+    tbody tr:hover {
+        background-color: rgba(0, 255, 255, 0.08);
+    }
+
+    th, td {
         padding: 12px;
+        border-bottom: 1px solid #00ffff22;
     }
 
     .text-gray-500 {
-        color: #ffffff;
+        color: #bbbbbb !important;
         font-style: italic;
     }
 
     .bg-green-600 {
-        background-color: #00ffcc;
+        background-color: #86bdb2 !important;
         color: #000;
         font-weight: bold;
         box-shadow: 0 0 10px #00ffff;
+        border: none;
     }
 
     .bg-green-600:hover {
-        background-color: #00e6b8;
+        background-color: #00e6b8 !important;
     }
 
-    .p-2 {
-        padding: 0.5rem;
+    .hidden-print {
+        display: none;
+    }
+
+    #pdf-content h2 {
+        display: none;
     }
 
     .rounded {
         border-radius: 0.5rem;
     }
 </style>
-
-
 {% endblock %}
 
 {% block content %}
@@ -121,10 +133,10 @@
 
     <!-- PDF Content -->
     <div id="pdf-content">
-        <h2 class="text-center text-xl font-bold mb-4 hidden-print" style="display: none;">Crave On Sales Report</h2>
+        <h2 class="text-center text-xl font-bold mb-4 hidden-print">Crave On Sales Report</h2>
 
-        <table class="min-w-full border divide-y divide-gray-200">
-            <thead class="bg-gray-100">
+        <table class="min-w-full border divide-y divide-cyan-400">
+            <thead>
                 <tr>
                     <th class="px-4 py-2 text-left">Year</th>
                     <th class="px-4 py-2 text-left">Month</th>
@@ -133,7 +145,7 @@
                     <th class="px-4 py-2 text-left">Total Sales</th>
                 </tr>
             </thead>
-            <tbody id="sales-body" class="bg-white divide-y divide-gray-200"></tbody>
+            <tbody id="sales-body"></tbody>
         </table>
     </div>
 </div>

@@ -2,7 +2,7 @@
 body {
     font-family: 'Orbitron', sans-serif;
     background-color: #0d1117;
-    color: #e0e0e0;
+    color: #1a1717;
 }
 
 /* base.css */
@@ -10,7 +10,7 @@ body {
 /* Sidebar default styling */
 .sidebar {
     width: 80px;
-    background-color: #111827;
+    background-color: #474e5c;
     transition: width 0.3s ease;
     overflow-x: hidden;
 }
@@ -84,8 +84,8 @@ body {
     left: 0;
     height: 100%;
     width: 80px; /* collapsed width */
-    background: linear-gradient(to bottom, #0f111a, #0d1117);
-    box-shadow: 2px 0 12px rgba(0, 255, 255, 0.2);
+    background: linear-gradient(#898989, #62db90);
+    box-shadow: 2px 0 12px rgba(34, 34, 34, 0.2);
     overflow-x: hidden;
     overflow-y: auto;
     z-index: 1040;
@@ -99,7 +99,7 @@ body {
 
 /* Sidebar links */
 #sidebar .nav-link {
-    color: #95a3a3;
+    color: #272929;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -125,7 +125,9 @@ body {
     background-color: rgba(0, 255, 255, 0.1);
     border-left: 3px solid #a0b0b0;
     text-shadow: 0 0 8px #b6c6c6;
+    
 }
+
 
 /* Toggle Button (optional, for mobile only) */
 #sidebarToggle {
