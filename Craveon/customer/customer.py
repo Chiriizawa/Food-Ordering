@@ -905,7 +905,7 @@ def api_orders():
     try:
         customer_id = session['user']
 
-        # Get customer info from updated `users` table
+        # Fetch user info
         cursor.execute("""
             SELECT user_id, first_name, middle_name, last_name, email, contact, address
             FROM users
@@ -926,21 +926,17 @@ def api_orders():
             'address': cust_row[6]
         }
 
-        # Get all orders for the customer
+        # Only fetch unpaid orders (payment_ss is NULL)
         cursor.execute("""
             SELECT order_id, ordered_at, payment_ss
             FROM orders
-            WHERE user_id = %s
+            WHERE user_id = %s AND payment_ss IS NULL
             ORDER BY ordered_at DESC
         """, (customer_id,))
         order_rows = cursor.fetchall()
 
-        if not order_rows:
-            return jsonify({'customer': customer, 'orders': []})
-
         orders = []
         for order_id, ordered_at, payment_ss in order_rows:
-            # Get items for each order
             cursor.execute("""
                 SELECT i.item_name, i.price, i.image, oi.quantity
                 FROM order_items oi
@@ -974,6 +970,55 @@ def api_orders():
         cursor.close()
         db.close()
 
+        
+@customer.route('/api/delete_order_item/<int:order_id>/<item_name>', methods=['DELETE'])
+def delete_order_item(order_id, item_name):
+    if 'user' not in session:
+        return jsonify({'error': 'User not logged in'}), 401
+
+    user_id = session['user']
+    db = connect_db()
+    cursor = db.cursor()
+
+    try:
+        # Verify the order belongs to the user
+        cursor.execute("SELECT * FROM orders WHERE order_id = %s AND user_id = %s", (order_id, user_id))
+        if not cursor.fetchone():
+            return jsonify({'error': 'Order not found or not authorized'}), 404
+
+        # Delete specific item from order_items
+        cursor.execute("""
+            DELETE oi FROM order_items oi
+            JOIN items i ON oi.item_id = i.item_id
+            WHERE oi.order_id = %s AND i.item_name = %s
+        """, (order_id, item_name))
+
+        # Recalculate new total
+        cursor.execute("""
+            SELECT SUM(i.price * oi.quantity)
+            FROM order_items oi
+            JOIN items i ON oi.item_id = i.item_id
+            WHERE oi.order_id = %s
+        """, (order_id,))
+        new_total = cursor.fetchone()[0] or 0.00
+
+        # Update total
+        cursor.execute("UPDATE orders SET total_amount = %s WHERE order_id = %s", (new_total, order_id))
+
+        db.commit()
+
+        return jsonify({'message': 'Item deleted and total updated.'})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+    finally:
+        cursor.close()
+        db.close()
+
+
+
+
 @customer.route('/api/update_payment', methods=['POST'])
 def update_payment():
     if 'user' not in session:
@@ -983,9 +1028,9 @@ def update_payment():
     if not file or file.filename == '':
         return jsonify({'error': 'No file uploaded'}), 400
 
-    image_bytes = file.read()  # ✅ Only read once
+    image_bytes = file.read()
 
-    if not allowed_file(file.filename):  # ✅ Only 1 argument
+    if not allowed_file(file.filename):  
         return jsonify({'error': 'Invalid file type.'}), 400
 
 
@@ -1032,7 +1077,6 @@ def thankyou():
 def myorders():
         return render_template('myorders.html')
     
-
 @customer.route('/api/myorders', methods=['GET'])
 def my_orders():
     if 'user' not in session:
@@ -1044,7 +1088,6 @@ def my_orders():
     try:
         customer_id = session['user']
 
-        # Get user info
         cursor.execute("""
             SELECT user_id, first_name, middle_name, last_name, email, contact, address, user_img
             FROM users
@@ -1055,10 +1098,8 @@ def my_orders():
         if not cust_row:
             return jsonify({'error': 'Customer not found'}), 404
 
-        # Prepare full name
         full_name = f"{cust_row[1]}{' ' + cust_row[2] if cust_row[2] else ''} {cust_row[3]}".strip()
 
-        # Handle base64 image (either bytes or string)
         user_img = None
         if cust_row[7]:
             user_img = base64.b64encode(cust_row[7]).decode('utf-8') if isinstance(cust_row[7], bytes) else cust_row[7]
@@ -1072,9 +1113,8 @@ def my_orders():
             'user_img': user_img
         }
 
-        # Get all orders
         cursor.execute("""
-            SELECT order_id, ordered_at, total_amount, status
+            SELECT order_id, ordered_at, total_amount, status, reviewed
             FROM orders
             WHERE user_id = %s
             ORDER BY ordered_at DESC
@@ -1084,10 +1124,8 @@ def my_orders():
         if not order_rows:
             return jsonify({'customer': customer, 'orders': []})
 
-        # Skip most recent order
         orders = []
-        for order_id, ordered_at, total_amount, status in order_rows[1:]:
-            # Get order items
+        for order_id, ordered_at, total_amount, status, reviewed in order_rows[1:]:
             cursor.execute("""
                 SELECT i.item_name, i.price, i.image, oi.quantity
                 FROM order_items oi
@@ -1098,11 +1136,8 @@ def my_orders():
 
             items = []
             for name, price, image, quantity in item_rows:
-                if image:
-                    if isinstance(image, bytes):
-                        image = base64.b64encode(image).decode('utf-8')
-                    # else: image is already base64 string
-
+                if image and isinstance(image, bytes):
+                    image = base64.b64encode(image).decode('utf-8')
                 items.append({
                     'name': name,
                     'price': float(price),
@@ -1110,12 +1145,17 @@ def my_orders():
                     'quantity': quantity
                 })
 
+            # If reviewed is True, override status
+            if reviewed:
+                status = 'Reviewed'
+
             orders.append({
                 'order_id': order_id,
                 'ordered_at': ordered_at.strftime('%Y-%m-%d %H:%M:%S'),
                 'total_amount': float(total_amount),
                 'status': status,
-                'items': items
+                'items': items,
+                'reviewed': reviewed
             })
 
         return jsonify({'customer': customer, 'orders': orders})
@@ -1127,8 +1167,6 @@ def my_orders():
         cursor.close()
         db.close()
 
-
-
 @customer.route('/api/cancel_order', methods=['POST'])
 def cancel_order():
     data = request.get_json()
@@ -1139,7 +1177,6 @@ def cancel_order():
         return jsonify({'error': 'Order ID and cancellation reason are required'}), 400
 
     try:
-        # Connect to the database and update the order status and reason
         db = connect_db()
         cursor = db.cursor()
 
@@ -1171,6 +1208,7 @@ def cancel_order():
     finally:
         cursor.close()
         db.close()
+
         
 @customer.route('/Account')
 def account():
