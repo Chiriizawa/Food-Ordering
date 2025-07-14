@@ -33,29 +33,8 @@
   </div>
 </section>
 
-<!-- Popular Dishes Section -->
-<section class="popular-dishes">
-  <div class="container">
-    <h1 class="scroll-fade animate__animated animate__fadeIn">Dishes</h1>
-    <div class="dish-grid">
-      {% for item in items %}
-      <div class="dish-card scroll-fade delay-{{ loop.index % 4 }} animate__animated animate__fadeInUp">
-        {% if item[3] %}
-        <img src="data:image/jpeg;base64,{{ item[3] }}" alt="{{ item[1] }}" class="dish-image">
-        {% else %}
-        <img src="#" alt="Default Image" class="dish-image">
-        {% endif %}
-        <div class="dish-info">
-          <h5 class="dish-name">{{ item[1] }}</h5>
-          <p class="dish-price">Price: <span>₱{{ item[2] }}</span></p>
-        </div>
-      </div>
-      {% else %}
-      <p class="text-white col-span-full">No items available.</p>
-      {% endfor %}
-    </div>
-  </div>
-</section>
+
+
 
 <!-- Footer -->
 <footer class="footer">

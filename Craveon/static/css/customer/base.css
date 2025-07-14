@@ -428,10 +428,7 @@
 .delay-3 { transition-delay: 0.3s; }
 .delay-4 { transition-delay: 0.4s; }
 
-  .spacious-section {
-    padding: 5rem 0;
-    margin-bottom: 3rem;
-  }
+ 
   
   .section-title {
     font-size: 2.5rem;
@@ -440,14 +437,7 @@
   }
   
   /* Welcome section specific */
-  .welcome-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 2rem;
-  }
+
   
   .welcome-text {
     flex: 1;
