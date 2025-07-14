@@ -19,10 +19,10 @@ def make_header(response):
 
 DB_CONFIGS = {
     'local': {
-        'host': '10.0.30.32',
+        'host': '192.168.1.4',
         'database': 'craveon',
         'user': 'root',
-        'password': 'ClodAndrei8225',
+        'password': 'haharaymund',
     },
     'flask_connection': {
         'host': '192.168.1.65',

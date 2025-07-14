@@ -14,13 +14,20 @@
 <section class="welcome-section">
   <div class="welcome-container">
     <div class="welcome-text">
-      <h1>Welcome to Crave On</h1>
-      <p class="tagline">Ang cravings for today ay mga labi mo, yakap mo at ang lambing</p>
+      <!-- Slightly larger heading on mobile -->
+      <h1 class="text-2xl md:text-4xl font-bold">Welcome to Crave On</h1>
+      
+      <!-- Hidden on small screens -->
+      <p class="tagline hidden md:block">Ang cravings for today ay mga labi mo, yakap mo at ang lambing</p>
+      
       <a href="{{ url_for('customer.menu') }}">
-      <button class="btn-order">Order Menu</button>
-    </a>
+        <!-- ✅ Only adjusted size (kept design as-is) -->
+        <button class="btn-order text-base md:text-lg px-6 py-3 mt-4">Order Menu</button>
+      </a>
     </div>
-    <div class="welcome-image">
+
+    <!-- Hidden on small screens -->
+    <div class="welcome-image hidden md:block">
       <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Delicious food from Crave On">
     </div>
   </div>
@@ -29,7 +36,7 @@
 <!-- Popular Dishes Section -->
 <section class="popular-dishes">
   <div class="container">
-    <h1 class="scroll-fade animate__animated animate__fadeIn">Popular Dishes</h1>
+    <h1 class="scroll-fade animate__animated animate__fadeIn">Dishes</h1>
     <div class="dish-grid">
       {% for item in items %}
       <div class="dish-card scroll-fade delay-{{ loop.index % 4 }} animate__animated animate__fadeInUp">
