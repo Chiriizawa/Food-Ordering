@@ -1,0 +1,173 @@
+html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        font-family: 'Orbitron', sans-serif, ;
+        background: linear-gradient(#898989, #62db90);
+        background-attachment: fixed;
+        color: #00ffff;
+        overflow-x: hidden;
+    }
+
+    h1, h2, h3, h4, h5 {
+        color: #00ffff;
+        text-shadow: 0 0 10px #00ffff;
+    }
+
+    .bg-white,
+    .bg-gray-50,
+    .bg-gray-100,
+    .bg-gray-200 {
+        background-color: #524e4e !important;
+    }
+
+    .text-gray-800, .text-gray-900, .text-gray-600, .text-gray-700 {
+        color: #1b2727 !important;
+    }
+
+    .border-gray-300, .border-gray-200 {
+        border-color: #00ffff !important;
+    }
+
+    table th, table td {
+        border-bottom: 1px solid #00ffff;
+    }
+
+    .status-badge {
+        background-color: transparent !important;
+        border: 1px solid #00ffff;
+        color: #00ffff;
+        box-shadow: 0 0 5px #00ffff;
+    }
+
+    button, select, input, textarea {
+        background-color: #12172a;
+        color: #00ffff;
+        border: 1px solid #00ffff;
+        border-radius: 6px;
+        padding: 0.5rem;
+        box-shadow: 0 0 5px #00ffff;
+        transition: all 0.2s ease-in-out;
+    }
+
+    button:hover,
+    select:hover,
+    input:hover,
+    textarea:hover {
+        background-color: #0a0f1c;
+        box-shadow: 0 0 10px #00ffff;
+    }
+
+    .disabled-btn {
+        opacity: 0.3;
+        box-shadow: none !important;
+        cursor: not-allowed;
+    }
+
+    .hover\:bg-gray-50:hover {
+        background-color: rgba(0, 255, 255, 0.05) !important;
+    }
+
+    .view-order-btn {
+        color: #00ffff;
+        text-shadow: 0 0 5px #00ffff;
+    }
+
+    .view-order-btn:hover {
+        text-decoration: underline;
+        color: #0ff;
+    }
+
+    .modal-container {
+        background-color: rgba(0, 0, 0, 0.8);
+    }
+
+    .pagination button {
+        color: #00ffff;
+        background-color: #12172a;
+        border: 1px solid #00ffff;
+        box-shadow: 0 0 5px #00ffff;
+    }
+
+    .pagination button:hover {
+        background-color: #0a0f1c;
+        box-shadow: 0 0 10px #00ffff;
+    }
+
+    /* Scrollbar for payment screenshot */
+    .payment-ss-container::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .payment-ss-container::-webkit-scrollbar-thumb {
+        background: #00ffff;
+        border-radius: 5px;
+    }
+
+    .payment-ss-thumbnail {
+        border: 1px solid #00ffff;
+        box-shadow: 0 0 4px #00ffff;
+    }
+
+    #order-summary div {
+        color: #00ffff;
+    }
+        /* Additional custom styles */
+        .modal-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .processing-btn {
+            background-color: #f59e0b;
+        }
+        .processing-btn:hover {
+            background-color: #d97706;
+        }
+        .disabled-btn {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .payment-ss-container {
+            max-height: 300px;
+            overflow: auto;
+        }
+        .payment-ss-thumbnail {
+            height: 50px;
+            width: 50px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .payment-ss-thumbnail:hover {
+            transform: scale(1.05);
+        }
+        .status-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+        .status-pending {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        .status-processing {
+            background-color: #ffedd5;
+            color: #9a3412;
+        }
+        .status-accepted {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+        .status-completed {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+        .status-cancelled {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }

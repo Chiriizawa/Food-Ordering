@@ -19,10 +19,10 @@ def make_header(response):
 
 DB_CONFIGS = {
     'local': {
-        'host': '10.0.30.32',
+        'host': '192.168.1.4',
         'database': 'craveon',
         'user': 'root',
-        'password': 'ClodAndrei8225',
+        'password': 'haharaymund',
     },
     'flask_connection': {
         'host': '192.168.1.65',
@@ -125,7 +125,6 @@ def login():
             conn.close()
 
             if user and bcrypt.check_password_hash(user['password'], password):
-                # ✅ Update status to 'Active'
                 try:
                     conn = connect_db()
                     cursor = conn.cursor()

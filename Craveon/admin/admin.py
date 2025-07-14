@@ -11,10 +11,10 @@ bcrypt = Bcrypt()
 # Support multiple database configurations (local and remote)
 DB_CONFIGS = {
     'local': {
-        'host': '10.0.30.32',
+        'host': '192.168.1.4',
         'database': 'craveon',
         'user': 'root',
-        'password': 'ClodAndrei8225',
+        'password': 'haharaymund',
     },
     'flask_connection': {
         'host': '192.168.1.65',
@@ -25,8 +25,6 @@ DB_CONFIGS = {
 }
 
 def get_db_config():
-    # Choose config based on environment variable, session, or other logic
-    # Example: use ?db=flask_connection in query string to select remote DB
     db_key = request.args.get('db', 'local')
     return DB_CONFIGS.get(db_key, DB_CONFIGS['local'])
 
@@ -653,7 +651,6 @@ def restore_item(item_id):
 
 @admin.route('/edit-item/<int:item_id>', methods=['POST'])
 def edit_item(item_id):
-    # Fetch the current item details from the database
     try:
         connection = connect_db()
         cursor = connection.cursor()
@@ -677,7 +674,6 @@ def edit_item(item_id):
     error_edit_price = None
     error_edit_image = None
 
-    # Process the form submission (POST request)
     name = request.form.get('name', '').strip()
     price_input = request.form.get('price', '').strip()
     category_id = request.form.get('category_id', '').strip()
@@ -685,7 +681,7 @@ def edit_item(item_id):
 
     valid = True
 
-    # Validate Item Name
+   
     if not name:
         error_edit_item = "Item name is required."
         valid = False
@@ -696,7 +692,7 @@ def edit_item(item_id):
         error_edit_item = "Item name must be between 4 and 19 characters long."
         valid = False
 
-    # Validate Price
+   
     try:
         price = float(price_input)
         if price < 0:
@@ -706,27 +702,25 @@ def edit_item(item_id):
         error_edit_price = "Invalid price format."
         valid = False
 
-    # Validate Image (optional for edit)
+    
     if image and image.filename != '':
         if not allowed_file(image.filename):
             error_edit_image = "Invalid file format. Only images (JPG, JPEG, PNG, GIF) are allowed."
             valid = False
-        if valid:  # Only proceed with image if everything else is valid
+        if valid: 
             image_data = image.read()
 
-    # If validation failed, return to form with errors
     if not valid:
         flash(error_edit_item or error_edit_price or error_edit_image, "danger")
         return redirect(url_for('admin.manageitem'))
 
-    # If everything is valid, update the item in the database
     try:
-        if image and image.filename != '':  # Update if new image provided
+        if image and image.filename != '': 
             cursor.execute(
                 "UPDATE items SET item_name=%s, price=%s, image=%s, category_id=%s WHERE item_id=%s",
                 (name, price, image_data, category_id, item_id)
             )
-        else:  # No new image, update only name, price, and category
+        else:  
             cursor.execute(
                 "UPDATE items SET item_name=%s, price=%s, category_id=%s WHERE item_id=%s",
                 (name, price, category_id, item_id)
@@ -742,7 +736,7 @@ def edit_item(item_id):
         cursor.close()
         connection.close()
 
-    return redirect(url_for('admin.manageitem'))  # Redirect to the same page after update
+    return redirect(url_for('admin.manageitem')) 
 
 @admin.route('/Manage-Orders', methods=['GET'])
 def morders():
@@ -755,9 +749,8 @@ def manage_orders():
 
     db = connect_db()
     cursor = db.cursor(dictionary=True)
-    
+
     try:
-        # Only fetch orders with payment screenshot submitted
         cursor.execute("""
             SELECT o.order_id, o.ordered_at, o.total_amount, o.status, o.payment_ss, o.cancellation_reason,
                    u.user_id, u.first_name, u.middle_name, u.last_name, u.email, u.contact, u.address
@@ -785,7 +778,6 @@ def manage_orders():
                 }
                 orders_grouped[user_id] = []
 
-            # Fetch order items
             cursor.execute("""
                 SELECT i.item_name, i.price, i.image, oi.quantity
                 FROM order_items oi
@@ -828,7 +820,6 @@ def manage_orders():
         cursor.close()
         db.close()
 
-
         
 @admin.route('/api/processing_order', methods=['POST'])
 def processing_order():
@@ -844,7 +835,6 @@ def processing_order():
         if not order_id:
             return jsonify({'error': 'Order ID is required'}), 400
 
-        # Update the order status to 'Accepted'
         cursor.execute("""
             UPDATE orders
             SET status = 'Processing'
@@ -878,7 +868,6 @@ def accept_order():
         if not order_id:
             return jsonify({'error': 'Order ID is required'}), 400
 
-        # Update the order status to 'Accepted'
         cursor.execute("""
             UPDATE orders
             SET status = 'Completed'
@@ -906,23 +895,19 @@ def cancel_order():
     cursor = db.cursor()
 
     try:
-        # Get the order ID from the request body
         order_id = request.json.get('order_id')
 
         if not order_id:
             return jsonify({'error': 'Order ID is required'}), 400
 
-        # Update the order status to 'Cancelled'
         cursor.execute("""
             UPDATE orders
             SET status = 'Cancelled'
             WHERE order_id = %s
         """, (order_id,))
 
-        # Commit the transaction
         db.commit()
 
-        # Check if the update was successful
         if cursor.rowcount == 0:
             return jsonify({'error': 'Order not found or already cancelled'}), 404
 
@@ -949,7 +934,6 @@ def test_hotel_users():
             for k, v in user.items():
                 if isinstance(v, datetime.timedelta):
                     user[k] = str(v)
-                # Handle image fields for both JSON and HTML
                 if 'img' in k.lower() or 'photo' in k.lower() or 'avatar' in k.lower() or 'image' in k.lower():
                     if v:
                         if isinstance(v, (bytes, bytearray)):
@@ -957,17 +941,14 @@ def test_hotel_users():
                         elif isinstance(v, str) and (v.startswith('http://') or v.startswith('https://')):
                             user[k] = v
                         elif isinstance(v, str):
-                            # Assume Cloudinary public ID or versioned path
                             if v.startswith('v') and '/' in v:
                                 user[k] = f"https://res.cloudinary.com/ddjp3phzz/image/upload/{v}"
                             else:
                                 user[k] = f"https://res.cloudinary.com/ddjp3phzz/image/upload/{v}.jpg"
                     else:
                         user[k] = None
-        # If HTML requested, render template
         if request.args.get('format') == 'html' or 'text/html' in request.headers.get('Accept', ''):
             return render_template('test.html', checked_in_users=users, error=None)
-        # Otherwise, return JSON
         return jsonify({'checked_in_users': users})
     except Exception as e:
         if request.args.get('format') == 'html' or 'text/html' in request.headers.get('Accept', ''):
@@ -979,7 +960,6 @@ def test_hotel_users():
 
 @admin.route('/test-hotel-users-ui', methods=['GET'])
 def test_hotel_users_ui():
-    # Always render the template, let the template handle empty state
     return render_template('test.html', checked_in_users=None, error=None)
 
 @admin.route('/sales')
@@ -1033,7 +1013,6 @@ def get_sales_data():
     cursor.close()
     conn.close()
 
-    # Aggregate results
     from collections import defaultdict
     from decimal import Decimal
 
@@ -1069,7 +1048,6 @@ def get_sales_data():
 
 @admin.route('/dashboard')
 def admin_dashboard():
-    # Sample data - replace with your actual data from database
     data = {
         'total_sales': 25680.00,
         'total_orders': 184,
@@ -1084,7 +1062,6 @@ def admin_dashboard():
         'top_revenues': [1400, 1200, 950, 850, 750, 650, 500],
         'recent_orders': [
             {'id': 'CR-7842', 'customer': 'John Smith', 'date': 'Jul 8, 2023', 'amount': '1,240.00', 'status': 'completed'},
-            # ... other orders
         ]
     }
     return render_template('index.html', **data)
