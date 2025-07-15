@@ -11,10 +11,10 @@ bcrypt = Bcrypt()
 # Support multiple database configurations (local and remote)
 DB_CONFIGS = {
     'local': {
-        'host': '192.168.1.4',
+        'host': '10.0.30.32',
         'database': 'craveon',
         'user': 'root',
-        'password': 'haharaymund',
+        'password': 'ClodAndrei8225',
     },
     'flask_connection': {
         'host': '192.168.1.65',

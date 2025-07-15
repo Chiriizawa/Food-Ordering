@@ -69,13 +69,13 @@ html, body {
     }
 
     .view-order-btn {
-        color: #00ffff;
-        text-shadow: 0 0 5px #00ffff;
+        color: #dee4e4;
+        text-shadow: 0 0 5px #fcfcfc;
     }
 
     .view-order-btn:hover {
         text-decoration: underline;
-        color: #0ff;
+        color: rgb(243, 255, 255);
     }
 
     .modal-container {
@@ -153,21 +153,21 @@ html, body {
         }
         .status-pending {
             background-color: #fef3c7;
-            color: #92400e;
+            color: #fb6407;
         }
         .status-processing {
             background-color: #ffedd5;
-            color: #9a3412;
+            color: #ff4000;
         }
         .status-accepted {
             background-color: #dbeafe;
-            color: #1e40af;
+            color: #003cff;
         }
         .status-completed {
             background-color: #dcfce7;
-            color: #166534;
+            color: #06ff66;
         }
         .status-cancelled {
             background-color: #fee2e2;
-            color: #991b1b;
+            color: #ff0000;
         }
