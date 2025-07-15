@@ -34,10 +34,10 @@ html, body {
     }
 
     .status-badge {
-        background-color: transparent !important;
-        border: 1px solid #00ffff;
-        color: #00ffff;
-        box-shadow: 0 0 5px #00ffff;
+        background-color: white !important;
+        border: 1px solid #141515;
+        color: #e6efef;
+        box-shadow: 0 0 5px #ffffff;
     }
 
     button, select, input, textarea {
@@ -55,7 +55,7 @@ html, body {
     input:hover,
     textarea:hover {
         background-color: #0a0f1c;
-        box-shadow: 0 0 10px #00ffff;
+        box-shadow: 0 0 10px #f6fafa;
     }
 
     .disabled-btn {
@@ -65,7 +65,7 @@ html, body {
     }
 
     .hover\:bg-gray-50:hover {
-        background-color: rgba(0, 255, 255, 0.05) !important;
+        background-color: rgba(242, 255, 255, 0.05) !important;
     }
 
     .view-order-btn {
@@ -84,13 +84,13 @@ html, body {
 
     .pagination button {
         color: #00ffff;
-        background-color: #12172a;
+        background-color: #ffffff;
         border: 1px solid #00ffff;
         box-shadow: 0 0 5px #00ffff;
     }
 
     .pagination button:hover {
-        background-color: #0a0f1c;
+        background-color: #f8f8f8;
         box-shadow: 0 0 10px #00ffff;
     }
 
@@ -100,7 +100,7 @@ html, body {
     }
 
     .payment-ss-container::-webkit-scrollbar-thumb {
-        background: #00ffff;
+        background: #eef7f7;
         border-radius: 5px;
     }
 
@@ -119,10 +119,10 @@ html, body {
             justify-content: center;
         }
         .processing-btn {
-            background-color: #f59e0b;
+            background-color: #ff4d00;
         }
         .processing-btn:hover {
-            background-color: #d97706;
+            background-color: #ff4d00;
         }
         .disabled-btn {
             opacity: 0.5;
@@ -152,19 +152,19 @@ html, body {
             text-transform: capitalize;
         }
         .status-pending {
-            background-color: #fef3c7;
-            color: #fb6407;
+            background-color: #fffcfc;
+            color: #ff4d00;
         }
         .status-processing {
-            background-color: #ffedd5;
-            color: #ff4000;
+            background-color: #fff5f5;
+            color: #ff4d00;
         }
         .status-accepted {
             background-color: #dbeafe;
             color: #003cff;
         }
         .status-completed {
-            background-color: #dcfce7;
+            background-color: #fff3f3;
             color: #06ff66;
         }
         .status-cancelled {

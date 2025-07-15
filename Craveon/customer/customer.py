@@ -19,7 +19,7 @@ def make_header(response):
 
 DB_CONFIGS = {
     'local': {
-        'host': '10.0.30.32',
+        'host': 'localhost',
         'database': 'craveon',
         'user': 'root',
         'password': 'ClodAndrei8225',

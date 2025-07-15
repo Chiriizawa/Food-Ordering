@@ -4,14 +4,15 @@ import mysql.connector
 from flask_bcrypt import Bcrypt
 from werkzeug.utils import secure_filename
 import datetime
+from collections import defaultdict
+from decimal import Decimal
 
 admin = Blueprint('admin', __name__, template_folder="template")
 bcrypt = Bcrypt()
 
-# Support multiple database configurations (local and remote)
 DB_CONFIGS = {
     'local': {
-        'host': '10.0.30.32',
+        'host': 'localhost',
         'database': 'craveon',
         'user': 'root',
         'password': 'ClodAndrei8225',
@@ -966,9 +967,6 @@ def test_hotel_users_ui():
 def sales():
     return render_template('sales.html')
 
-from collections import defaultdict
-from decimal import Decimal
-
 @admin.route('/api/sales', methods=['GET'])
 def get_sales_data():
     year = request.args.get('year')
@@ -981,11 +979,13 @@ def get_sales_data():
 
     query = """
         SELECT 
+            o.order_id,
             o.ordered_at,
-            oi.quantity,
-            i.price,
             i.item_name,
-            c.category_name
+            c.category_name,
+            i.price,
+            oi.quantity,
+            (oi.quantity * i.price) AS total
         FROM orders o
         JOIN order_items oi ON o.order_id = oi.order_id
         JOIN items i ON oi.item_id = i.item_id
@@ -1008,43 +1008,19 @@ def get_sales_data():
         values.append(category)
 
     query += " ORDER BY o.ordered_at DESC"
+
     cursor.execute(query, tuple(values))
     rows = cursor.fetchall()
-    cursor.close()
-    conn.close()
-
-    from collections import defaultdict
-    from decimal import Decimal
-
-    sales_data = defaultdict(lambda: defaultdict(lambda: {"total": Decimal("0.00"), "category": ""}))
-    month_names = {}
 
     for row in rows:
-        ordered_at = row['ordered_at']
-        item_name = row['item_name']
-        quantity = row['quantity']
-        price = row['price']
-        category_name = row['category_name']
-        total = quantity * price
+        row["year"] = row["ordered_at"].year
+        row["month_number"] = row["ordered_at"].month
+        row["month"] = row["ordered_at"].strftime('%B')
 
-        year_month = (ordered_at.year, ordered_at.month)
-        sales_data[year_month][item_name]["total"] += total
-        sales_data[year_month][item_name]["category"] = category_name
-        month_names[ordered_at.month] = ordered_at.strftime('%B')
+    cursor.close()
+    conn.close()
+    return jsonify({'sales': rows})
 
-    result = []
-    for (y, m), items in sorted(sales_data.items(), reverse=True):
-        for item_name, data in items.items():
-            result.append({
-                'year': y,
-                'month_number': m,
-                'month': month_names[m],
-                'item_name': item_name,
-                'category_name': data["category"],
-                'total': float(data["total"])
-            })
-
-    return jsonify({'sales': result})
 
 @admin.route('/dashboard')
 def admin_dashboard():
