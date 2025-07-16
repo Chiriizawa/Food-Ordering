@@ -741,20 +741,17 @@ def edit_item(item_id):
 
 @admin.route('/Manage-Orders', methods=['GET'])
 def morders():
-        return render_template("morders.html")
+    return render_template("morders.html")
 
 @admin.route('/morders', methods=['GET'])
 def manage_orders():
-    if 'admin' not in session:
-        return jsonify({'error': 'Admin not logged in'}), 401
-
     db = connect_db()
     cursor = db.cursor(dictionary=True)
 
     try:
         cursor.execute("""
             SELECT o.order_id, o.ordered_at, o.total_amount, o.status, o.payment_ss, o.cancellation_reason,
-                   u.user_id, u.first_name, u.middle_name, u.last_name, u.email, u.contact, u.address
+                   u.user_id, u.first_name, u.middle_name, u.last_name, u.email, u.contact, u.address, u.hotel_user
             FROM orders o
             JOIN users u ON o.user_id = u.user_id
             WHERE o.payment_ss IS NOT NULL
@@ -775,7 +772,8 @@ def manage_orders():
                     'full_name': full_name,
                     'email': row['email'],
                     'contact': row['contact'],
-                    'address': row['address']
+                    'address': row['address'],
+                    'hotel_user': row['hotel_user'],
                 }
                 orders_grouped[user_id] = []
 
@@ -790,7 +788,6 @@ def manage_orders():
             items = [{
                 'name': item['item_name'],
                 'price': float(item['price']),
-                'image': base64.b64encode(item['image']).decode('utf-8') if item['image'] else None,
                 'quantity': item['quantity']
             } for item in item_rows]
 
@@ -799,7 +796,6 @@ def manage_orders():
                 'ordered_at': row['ordered_at'].strftime('%Y-%m-%d %H:%M'),
                 'total_amount': float(row['total_amount']),
                 'status': row['status'],
-                'payment_ss': row['payment_ss'],
                 'payment_submitted': True,
                 'cancellation_reason': row['cancellation_reason'],
                 'items': items

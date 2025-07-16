@@ -224,9 +224,9 @@ function loadOrders() {
                     if (order.items && order.items.length > 0) {
                         allOrders.push({
                             ...order,
-                            customer_name: customer.customer.full_name,
+                            customer_name: customer.customer.full_name + (customer.customer.hotel_user ? ' <span class="badge bg-info">Azurea Hotel User</span>' : ''),
                             customer_email: customer.customer.email,
-                            customer_contact: customer.customer.contact,
+                            customer_contact: customer.customer.contact,    
                             customer_address: customer.customer.address
                         });
                     }

@@ -227,7 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const rowHTML = `
                     <tr>
                         <td>${user.first_name} ${user.middle_name || ''} ${user.last_name}</td>
-                        <td>${user.email}</td>
+                        <td>${user.email} ${user.hotel_user ? '<span class="badge bg-info">Azurea Hotel User</span>' : ''}</td>
                         <td>${user.contact}</td>
                         <td>${user.address}</td>
                         <td><span class="badge ${statusBadge}">${user.status}</span></td>
