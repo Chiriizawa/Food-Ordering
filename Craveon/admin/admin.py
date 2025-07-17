@@ -59,6 +59,10 @@ def index():
         cursor.execute("SELECT COUNT(*) AS cnt FROM users")
         total_customers = cursor.fetchone()['cnt']
 
+        # Total reviews
+        cursor.execute("SELECT COUNT(*) AS cnt FROM reviews")
+        total_reviews = cursor.fetchone()['cnt']
+
         # Total profit (sales minus 20% commission on hotel_user orders)
         cursor.execute("""
             SELECT COALESCE(SUM(
@@ -94,14 +98,15 @@ def index():
         """)
         popular_items = cursor.fetchall()
 
-        item_names    = [row['item_name']       for row in popular_items]
-        item_sales    = [int(row['total_quantity'])  for row in popular_items]
+        item_names    = [row['item_name'] for row in popular_items]
+        item_sales    = [int(row['total_quantity']) for row in popular_items]
         item_revenues = [float(row['total_revenue']) for row in popular_items]
 
         return render_template(
             'index.html',
             total_profit=total_profit,
             total_customers=total_customers,
+            total_reviews=total_reviews,
             item_names=item_names,
             item_sales=item_sales,
             item_revenues=item_revenues
@@ -109,7 +114,6 @@ def index():
     finally:
         cursor.close()
         conn.close()
-
 
 
 @admin.route('/login', methods=['GET', 'POST'])
@@ -622,92 +626,92 @@ def restore_item(item_id):
 
     return redirect(url_for('admin.manageitem'))
 
-@admin.route('/edit-item/<int:item_id>', methods=['POST'])
-def edit_item(item_id):
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@admin.route('/api/edit-item/<int:item_id>', methods=['POST'])
+def api_edit_item(item_id):
     if 'admin' not in session:
-        flash("You need to login first", "danger")
-        return redirect(url_for('admin.login'))
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+
+    # Get form data
+    name = request.form.get('name', '').strip()
+    price = request.form.get('price')
+    category_id = request.form.get('category_id')
+    image = request.files.get('image')
+
+    if not name or not price or not category_id:
+        return jsonify({'success': False, 'message': 'All fields are required'}), 400
+    if not name:
+        return jsonify({'success': False, 'message': 'Item name is required'}), 400
+
+    if len(name) < 2 or len(name) > 100:
+        return jsonify({'success': False, 'message': 'Item name must be between 2 and 100 characters'}), 400
+
+    if any(char.isdigit() for char in name):
+        return jsonify({'success': False, 'message': 'Item name must not contain numbers'}), 400
+
+
+    if not category_id.isdigit():
+        return jsonify({'success': False, 'message': 'Invalid category format'}), 400
 
     try:
+        price_val = float(price)
+        if price_val <= 0:
+            return jsonify({'success': False, 'message': 'Price must be greater than 0'}), 400
+    except (ValueError, TypeError):
+            return jsonify({'success': False, 'message': 'Invalid price format. Must be a number.'}), 400
+    try:
         connection = connect_db()
-        cursor = connection.cursor(dictionary=True)
+        cursor = connection.cursor()
 
-        # Get form data
-        name = request.form.get('name', '').strip()
-        price = request.form.get('price', '').strip()
-        category_id = request.form.get('category_id')
-        image = request.files.get('image')
+        # Check if category exists
+        cursor.execute("SELECT category_id FROM categories WHERE category_id = %s", (category_id,))
+        if not cursor.fetchone():
+            return jsonify({'success': False, 'message': 'Invalid category'}), 400
 
-        # Validate inputs
-        errors = []
-        
-        # Name validation
-        if not name:
-            errors.append("Item name is required.")
-        elif len(name) < 2 or len(name) > 50:
-            errors.append("Item name must be between 2-50 characters.")
-            
-        # Price validation
-        try:
-            price = float(price)
-            if price <= 0:
-                errors.append("Price must be positive.")
-        except ValueError:
-            errors.append("Invalid price format.")
-            
-        # Image validation (only if new image is provided)
-        image_data = None
+        # Check if item exists
+        cursor.execute("SELECT item_id FROM items WHERE item_id = %s", (item_id,))
+        if not cursor.fetchone():
+            return jsonify({'success': False, 'message': 'Item not found'}), 404
+
+        # === HANDLE IMAGE (convert to base64) ===
         if image and image.filename:
-            if not allowed_file(image.filename):
-                errors.append("Only JPG, JPEG, PNG, GIF allowed.")
-            else:
-                image_data = image.read()
+            filename = secure_filename(image.filename)
+            if not allowed_file(filename):
+                return jsonify({'success': False, 'message': 'Invalid image type. Allowed: JPG, PNG, GIF'}), 400
 
-        if errors:
-            for error in errors:
-                flash(error, "danger")
-            return redirect(url_for('admin.manageitem'))
+            image_bytes = image.read()
+            image_base64 = base64.b64encode(image_bytes).decode('utf-8')
 
-        # Build the update query based on provided fields
-        update_fields = []
-        params = []
-        
-        update_fields.append("item_name = %s")
-        params.append(name)
-        
-        update_fields.append("price = %s")
-        params.append(price)
-        
-        update_fields.append("category_id = %s")
-        params.append(category_id)
-        
-        if image_data:
-            update_fields.append("image = %s")
-            params.append(image_data)
-        
-        params.append(item_id)  # For WHERE clause
+            cursor.execute("""
+                UPDATE items 
+                SET item_name = %s, price = %s, category_id = %s, image = %s
+                WHERE item_id = %s
+            """, (name, price, category_id, image_base64, item_id))
+        else:
+            # No image update
+            cursor.execute("""
+                UPDATE items 
+                SET item_name = %s, price = %s, category_id = %s
+                WHERE item_id = %s
+            """, (name, price, category_id, item_id))
 
-        # Execute the update
-        query = f"""
-            UPDATE items 
-            SET {', '.join(update_fields)}
-            WHERE item_id = %s
-        """
-        cursor.execute(query, tuple(params))
         connection.commit()
-
-        flash("Item updated successfully!", "success")
-        return redirect(url_for('admin.manageitem'))
+        return jsonify({'success': True, 'message': 'Item updated successfully'})
 
     except Exception as e:
-        flash(f"Error updating item: {str(e)}", "danger")
-        return redirect(url_for('admin.manageitem'))
+        if 'connection' in locals():
+            connection.rollback()
+        return jsonify({'success': False, 'message': f'Database error: {str(e)}'}), 500
 
     finally:
-        if 'cursor' in locals() and cursor:
-            cursor.close()
-        if 'connection' in locals() and connection:
-            connection.close()
+        if 'cursor' in locals(): cursor.close()
+        if 'connection' in locals(): connection.close()
+
 
 @admin.route('/Manage-Orders', methods=['GET'])
 def morders():
@@ -755,11 +759,16 @@ def manage_orders():
             """, (row['order_id'],))
             item_rows = cursor.fetchall()
 
-            items = [{
-                'name': item['item_name'],
-                'price': float(item['price']),
-                'quantity': item['quantity']
-            } for item in item_rows]
+            items = []
+            for item in item_rows:
+                # Convert LONGBLOB image to base64 string for display
+                image_base64 = base64.b64encode(item['image']).decode('utf-8') if item['image'] else None
+                items.append({
+                    'name': item['item_name'],
+                    'price': float(item['price']),
+                    'quantity': item['quantity'],
+                    'image': image_base64
+                })
 
             orders_grouped[user_id].append({
                 'order_id': row['order_id'],
@@ -767,6 +776,7 @@ def manage_orders():
                 'total_amount': float(row['total_amount']),
                 'status': row['status'],
                 'payment_submitted': True,
+                'payment_ss': row['payment_ss'],
                 'cancellation_reason': row['cancellation_reason'],
                 'items': items
             })
@@ -786,6 +796,7 @@ def manage_orders():
     finally:
         cursor.close()
         db.close()
+
 
         
 @admin.route('/api/processing_order', methods=['POST'])
@@ -1073,20 +1084,27 @@ def reviews():
     if 'admin' not in session:
         return redirect(url_for('admin.login'))
 
+    rating_filter = request.args.get('rating', type=int)
+
     db = connect_db()
     cursor = db.cursor(dictionary=True)
 
-    cursor.execute("""
+    query = """
         SELECT r.id, r.order_id, r.rating, r.comment, r.created_at,
-        u.first_name, u.last_name
+               u.first_name, u.last_name
         FROM reviews r
-        JOIN orders o ON r.order_id = o.order_id
-        JOIN users u ON o.user_id = u.user_id
-        ORDER BY r.created_at DESC
-    """)
+        LEFT JOIN orders o ON r.order_id = o.order_id
+        LEFT JOIN users u ON o.user_id = u.user_id
+    """
+    if rating_filter:
+        query += " WHERE r.rating = %s"
+        cursor.execute(query + " ORDER BY r.created_at DESC", (rating_filter,))
+    else:
+        cursor.execute(query + " ORDER BY r.created_at DESC")
+
     reviews = cursor.fetchall()
 
     cursor.close()
     db.close()
 
-    return render_template('reviews.html', reviews=reviews)
+    return render_template('reviews.html', reviews=reviews, selected_rating=rating_filter)

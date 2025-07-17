@@ -23,8 +23,9 @@
         <div class="bg-white w-full max-w-md mx-4 p-6 rounded-lg shadow-lg animate-fade-in">
             <h3 class="text-xl font-semibold text-gray-700 mb-4 text-center">Confirm Payment</h3>
             <p class="text-gray-600 mb-4 text-center">Are you sure you want to upload this payment proof?</p>
-            <div class="flex justify-center">
+            <div class="flex justify-center gap-4">
                 <button id="confirm-order" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition">Confirm</button>
+                <button id="cancel-order-modal" class="bg-gray-300 text-black px-6 py-2 rounded-lg hover:bg-gray-400 transition">Cancel</button>
             </div>
         </div>
     </div>
@@ -74,11 +75,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const ordersContainer = document.getElementById('orders-container');
     const orderModal = document.getElementById('order-modal');
     const confirmOrderButton = document.getElementById('confirm-order');
+    const cancelOrderModal = document.getElementById('cancel-order-modal');
     const orderNowButton = document.getElementById('order-now-button');
     const uploadSection = document.getElementById('upload-section');
     const errorMessage = document.getElementById('error-message');
 
-    // Delete modal
     const deleteModal = document.getElementById('delete-modal');
     const confirmDeleteBtn = document.getElementById('confirm-delete');
     const cancelDeleteBtn = document.getElementById('cancel-delete');
@@ -174,9 +175,12 @@ document.addEventListener('DOMContentLoaded', function () {
             ordersContainer.innerHTML = '<p class="text-center text-red-600">Failed to load orders.</p>';
         });
 
-    // Upload Modal
     orderNowButton.addEventListener('click', () => {
         orderModal.classList.remove('hidden');
+    });
+
+    cancelOrderModal.addEventListener('click', () => {
+        orderModal.classList.add('hidden');
     });
 
     confirmOrderButton.addEventListener('click', () => {
@@ -216,7 +220,6 @@ document.addEventListener('DOMContentLoaded', function () {
         .catch(() => alert('Upload error.'));
     });
 
-    // Delete individual item from order (with modal)
     ordersContainer.addEventListener('click', function (e) {
         if (e.target.classList.contains('delete-item-btn')) {
             selectedOrderId = e.target.getAttribute('data-order-id');

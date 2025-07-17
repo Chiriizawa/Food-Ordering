@@ -4,276 +4,69 @@
 <title>Crave On - Admin</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
-
-<style>
-    body {
-        background: linear-gradient(#898989, #62db90);
-        color: #e0e0e0;
-        font-family: 'Orbitron', sans-serif;
-    }
-
-    h2, h4, h5 {
-        color: #1c1e1e;
-        text-shadow: 0 0 5px #00ffff;
-    }
-
-    .card {
-        background: linear-gradient(#524e4e);
-        border: none;
-        box-shadow: 0 0 15px rgba(0, 255, 255, 0.15);
-        color: #e0e0e0;
-        margin-bottom: 1.5rem;
-    }
-
-    .card-header {
-        background: linear-gradient(#524e4e);
-        border-bottom: 1px solid #00ffff50;
-    }
-
-    .form-label {
-        color: #ebf3f3;
-    }
-
-    .form-control,
-    .form-select {
-        background-color:  #497058;
-        color: #00ffff;
-        border: 1px solid #00ffff;
-        border-radius: 8px;
-    }
-
-    .form-control:focus,
-    .form-select:focus {
-        background-color: #0f172a;
-        color: #00ffff;
-        box-shadow: 0 0 10px #00ffff;
-        border-color: #00ffff;
-    }
-
-    .btn-primary {
-        background-color: #9ac1c1;
-        border: none;
-        color: #000000;
-        font-weight: bold;
-        box-shadow: 0 0 10px #83abab;
-    }
-
-    .btn-primary:hover {
-        background-color: #00e6e6;
-    }
-
-    .btn-warning,
-    .btn-danger,
-    .btn-success,
-    .btn-secondary {
-        border: none;
-        font-weight: bold;
-    }
-
-    .btn-warning {
-        background-color: #facc15;
-        color: #000;
-    }
-
-    .btn-danger {
-        background-color: #ef4444;
-        color: #fff;
-    }
-
-    .btn-success {
-        background-color: #22c55e;
-        color: #fff;
-    }
-
-    .btn-secondary {
-        background-color: #6b7280;
-        color: #fff;
-    }
-
-    .table {
-        background-color: #6a6767;
-        color: #ffffff;
-        border-radius: 10px;
-        overflow: hidden;
-    }
-
-    .table thead {
-        background-color:#6a6767;
-        color: #00ffff;
-    }
-
-    .table td,
-    .table th {
-        vertical-align: middle;
-    }
-
-    .table-striped tbody tr:nth-of-type(odd) {
-        background-color: rgba(0, 255, 255, 0.03);
-    }
-
-    .input-group-text {
-        background-color: #0f172a;
-        border: 1px solid #00ffff;
-        color: #00ffff;
-    }
-
-    .form-control::placeholder {
-        color: #00ffff88;
-    }
-
-    .modal-content {
-        background-color: #1f2937;
-        color: #00ffff;
-        border: 1px solid #00ffff50;
-        box-shadow: 0 0 10px #00ffff40;
-    }
-
-    .alert {
-        border-radius: 10px;
-        box-shadow: 0 0 10px rgba(0, 255, 255, 0.15);
-    }
-
-    /* Archived items */
-    .archived-item {
-        opacity: 0.7;
-    }
-    
-    .archived-item:hover {
-        opacity: 1;
-    }
-
-    /* Image thumbnails */
-    .img-thumbnail {
-        max-width: 80px;
-        max-height: 80px;
-        background-color: #0f172a;
-        border: 1px solid #00ffff50;
-    }
-
-    /* Action buttons */
-    .action-buttons {
-        min-width: 180px;
-    }
-
-    .btn-group .btn {
-        margin-right: 0.5rem;
-    }
-
-    /* Card header colors */
-    .bg-primary {
-        background: linear-gradient(to right, #0077ff, #00aaff) !important;
-    }
-
-    .bg-success {
-        background: linear-gradient(to right, #00aa77, #00cc88) !important;
-    }
-
-    .bg-secondary {
-        background: linear-gradient(to right, #555577, #777799) !important;
-    }
-
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-        .input-group {
-            width: 100% !important;
-            margin-top: 1rem;
-        }
-        
-        .btn-group {
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .btn-group .btn {
-            margin-bottom: 0.5rem;
-            margin-right: 0;
-        }
-    }
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin_css/items.css') }}">
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
     <h2 class="text-center mb-4">Manage Menu Items</h2>
-    
-    <!-- Flash Messages -->
-   {% with messages = get_flashed_messages(with_categories=true) %}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
         {% for category, message in messages %}
-            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
         {% endfor %}
     {% endif %}
-{% endwith %}
-    
+    {% endwith %}
+
     <!-- Add Item Form -->
-    <div class="card p-4 shadow">
-        <div class="card-header">
-            <h4>Add New Item</h4>
-        </div>
+    <div class="card p-4 shadow mb-4">
+        <div class="card-header"><h4>Add New Item</h4></div>
         <div class="card-body">
             <form method="POST" enctype="multipart/form-data">
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label">Item Name</label>
-                        <input type="text" name="name" class="form-control {% if error_item %}is-invalid{% endif %}" 
-                               value="{{ request.form.name if request.form.name }}" required>
-                        {% if error_item %}
-                            <div class="invalid-feedback">{{ error_item }}</div>
-                        {% endif %}
+                        <input type="text" name="name" class="form-control {% if error_item %}is-invalid{% endif %}" value="{{ request.form.name or '' }}" required>
+                        {% if error_item %}<div class="invalid-feedback">{{ error_item }}</div>{% endif %}
                     </div>
-                    
                     <div class="col-md-6">
                         <label class="form-label">Price</label>
-                        <input type="number" step="0.01" name="price" 
-                               class="form-control {% if error_price %}is-invalid{% endif %}" 
-                               value="{{ request.form.price if request.form.price }}" required>
-                        {% if error_price %}
-                            <div class="invalid-feedback">{{ error_price }}</div>
-                        {% endif %}
+                        <input type="number" step="0.01" name="price" class="form-control {% if error_price %}is-invalid{% endif %}" value="{{ request.form.price or '' }}" required>
+                        {% if error_price %}<div class="invalid-feedback">{{ error_price }}</div>{% endif %}
                     </div>
-                    
                     <div class="col-md-6">
                         <label class="form-label">Category</label>
                         <select name="category_id" class="form-select" required>
                             <option value="">Select Category</option>
                             {% for cat in categories %}
-                                <option value="{{ cat[0] }}" {% if request.form.category_id == cat[0]|string %}selected{% endif %}>
-                                    {{ cat[1] }}
-                                </option>
+                            <option value="{{ cat[0] }}" {% if request.form.category_id == cat[0]|string %}selected{% endif %}>{{ cat[1] }}</option>
                             {% endfor %}
                         </select>
                     </div>
-                    
                     <div class="col-md-6">
                         <label class="form-label">Item Image</label>
                         <input type="file" name="image" class="form-control {% if error_image %}is-invalid{% endif %}" accept="image/*" required>
-                        {% if error_image %}
-                            <div class="invalid-feedback">{{ error_image }}</div>
-                        {% endif %}
+                        {% if error_image %}<div class="invalid-feedback">{{ error_image }}</div>{% endif %}
                     </div>
-                    
                     <div class="col-12">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-plus-circle me-2"></i>Add Item
-                        </button>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-plus-circle me-2"></i>Add Item</button>
                     </div>
                 </div>
             </form>
         </div>
     </div>
-    
-    <!-- Active Items -->
-    <div class="card p-4 shadow">
-        <div class="card-header">
-            <div class="d-flex justify-content-between align-items-center">
-                <h4>Active Menu Items</h4>
-                <div class="input-group" style="width: 300px;">
-                    <span class="input-group-text"><i class="fas fa-search"></i></span>
-                    <input type="text" id="searchActive" class="form-control" placeholder="Search active items...">
-                </div>
+
+    <!-- Active Items Table -->
+    <div class="card p-4 shadow mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4>Active Menu Items</h4>
+            <div class="input-group" style="width: 300px;">
+                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                <input type="text" id="searchActive" class="form-control" placeholder="Search active items...">
             </div>
         </div>
         <div class="card-body">
@@ -285,96 +78,50 @@
                             <th>Name</th>
                             <th>Price</th>
                             <th>Category</th>
-                            <th class="action-buttons">Actions</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="activeItemsTable">
-                        {% if items %}
-                            {% for item in items %}
-                                <tr>
-                                    <td>
-                                        {% if item[3] %}
-                                            <img src="data:image/jpeg;base64,{{ item[3] }}" class="img-thumbnail">
-                                        {% else %}
-                                            <span class="text-muted">No Image</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>{{ item[1] }}</td>
-                                    <td>₱{{ "%.2f"|format(item[2]) }}</td>
-                                    <td>{{ item[5] }}</td>
-                                    <td>
-                                        <div class="btn-group">
-                                            <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editModal{{ item[0] }}">
-                                                <i class="fas fa-edit me-1"></i>Edit
-                                            </button>
-                                            <a href="{{ url_for('admin.archive_item', item_id=item[0]) }}" class="btn btn-danger btn-sm" onclick="return confirm('Archive this item?')">
-                                                <i class="fas fa-archive me-1"></i>Archive
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-
-                                <!-- Edit Modal -->
-                                <div class="modal fade" id="editModal{{ item[0] }}" tabindex="-1" aria-labelledby="editModalLabel{{ item[0] }}" aria-hidden="true">
-                                  <div class="modal-dialog modal-lg">
-                                    <form action="{{ url_for('admin.edit_item', item_id=item[0]) }}" method="POST" enctype="multipart/form-data" class="modal-content">
-                                      <div class="modal-header bg-primary">
-                                        <h5 class="modal-title" id="editModalLabel{{ item[0] }}">Edit “{{ item[1] }}”</h5>
-                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                      </div>
-                                      <div class="modal-body">
-                                        <div class="row g-3">
-                                          <div class="col-md-6">
-                                            <label class="form-label">Item Name</label>
-                                            <input name="name" type="text" class="form-control" value="{{ item[1] }}" required>
-                                          </div>
-                                          <div class="col-md-6">
-                                            <label class="form-label">Price</label>
-                                            <input name="price" type="number" step="0.01" class="form-control" value="{{ item[2] }}" required>
-                                          </div>
-                                          <div class="col-md-6">
-                                            <label class="form-label">Category</label>
-                                            <select name="category_id" class="form-select" required>
-                                              {% for cat in categories %}
-                                                <option value="{{ cat[0] }}" {% if cat[0] == item[4] %}selected{% endif %}>{{ cat[1] }}</option>
-                                              {% endfor %}
-                                            </select>
-                                          </div>
-                                          <div class="col-md-6">
-                                            <label class="form-label">Change Image</label>
-                                            <input name="image" type="file" class="form-control">
-                                            <small class="text-secondary">Leave blank to keep current</small>
-                                          </div>
-                                        </div>
-                                      </div>
-                                      <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                        <button type="submit" class="btn btn-warning">Save Changes</button>
-                                      </div>
-                                    </form>
-                                  </div>
+                        {% for item in items %}
+                        <tr>
+                            <td>
+                                {% if item[3] %}
+                                <img src="data:image/jpeg;base64,{{ item[3] }}" class="img-thumbnail" width="60">
+                                {% else %}
+                                <span class="text-muted">No Image</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ item[1] }}</td>
+                            <td>₱{{ "%.2f"|format(item[2]) }}</td>
+                            <td>{{ item[5] }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editModal{{ item[0] }}">
+                                        <i class="fas fa-edit me-1"></i>Edit
+                                    </button>
+                                    <a href="{{ url_for('admin.archive_item', item_id=item[0]) }}" class="btn btn-danger btn-sm" onclick="return confirm('Archive this item?')">
+                                        <i class="fas fa-archive me-1"></i>Archive
+                                    </a>
                                 </div>
-                            {% endfor %}
-                        {% else %}
-                            <tr>
-                                <td colspan="5" class="text-center py-4">No active items found</td>
-                            </tr>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% if items|length == 0 %}
+                        <tr><td colspan="5" class="text-center">No active items found.</td></tr>
                         {% endif %}
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
-    
-    <!-- Archived Items -->
+
+    <!-- Archived Items Table -->
     <div class="card p-4 shadow">
-        <div class="card-header">
-            <div class="d-flex justify-content-between align-items-center">
-                <h4>Archived Items</h4>
-                <div class="input-group" style="width: 300px;">
-                    <span class="input-group-text"><i class="fas fa-search"></i></span>
-                    <input type="text" id="searchArchived" class="form-control" placeholder="Search archived items...">
-                </div>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4>Archived Items</h4>
+            <div class="input-group" style="width: 300px;">
+                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                <input type="text" id="searchArchived" class="form-control" placeholder="Search archived items...">
             </div>
         </div>
         <div class="card-body">
@@ -386,68 +133,132 @@
                             <th>Name</th>
                             <th>Price</th>
                             <th>Category</th>
-                            <th class="action-buttons">Actions</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="archivedItemsTable">
                         {% for item in archived_items %}
-                        <tr class="archived-item">
+                        <tr>
                             <td>
                                 {% if item[3] %}
-                                    <img src="data:image/jpeg;base64,{{ item[3] }}" class="img-thumbnail">
+                                <img src="data:image/jpeg;base64,{{ item[3] }}" class="img-thumbnail" width="60">
                                 {% else %}
-                                    <span class="text-muted">No Image</span>
+                                <span class="text-muted">No Image</span>
                                 {% endif %}
                             </td>
                             <td>{{ item[1] }}</td>
                             <td>₱{{ "%.2f"|format(item[2]) }}</td>
                             <td>{{ item[5] }}</td>
                             <td>
-                                <a href="{{ url_for('admin.restore_item', item_id=item[0]) }}" 
-                                   class="btn btn-success btn-sm"
-                                   onclick="return confirm('Restore this item?')">
+                                <a href="{{ url_for('admin.restore_item', item_id=item[0]) }}" class="btn btn-success btn-sm" onclick="return confirm('Restore this item?')">
                                     <i class="fas fa-undo me-1"></i>Restore
                                 </a>
                             </td>
                         </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="5" class="text-center py-4">No archived items found</td>
-                        </tr>
                         {% endfor %}
+                        {% if archived_items|length == 0 %}
+                        <tr><td colspan="5" class="text-center">No archived items found.</td></tr>
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
+
+    <!-- Edit Modals (outside table) -->
+    {% for item in items %}
+    <div class="modal fade" id="editModal{{ item[0] }}" tabindex="-1" aria-labelledby="editModalLabel{{ item[0] }}" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="editModalLabel{{ item[0] }}">Edit "{{ item[1] }}"</h5>
+                </div>
+                <form id="editForm{{ item[0] }}" enctype="multipart/form-data">
+                    <div class="modal-body">
+                        <div id="editMsg{{ item[0] }}" class="mb-3"></div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Item Name</label>
+                                <input name="name" type="text" class="form-control" value="{{ item[1] }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Price</label>
+                                <input name="price" type="text" step="0.01" class="form-control" value="{{ item[2] }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Category</label>
+                                <select name="category_id" class="form-select" required>
+                                    {% for cat in categories %}
+                                    <option value="{{ cat[0] }}" {% if cat[0] == item[4] %}selected{% endif %}>{{ cat[1] }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Change Image</label>
+                                <input name="image" type="file" class="form-control">
+                                <small class="text-muted">Leave blank to keep current image.</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-warning" onclick="submitEdit({{ item[0] }})">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
 </div>
+
+<!-- Bootstrap JS required for modal -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
-
-document.getElementById('searchActive').addEventListener('input', function() {
-    const searchTerm = this.value.toLowerCase();
-    document.querySelectorAll('#activeItemsTable tr').forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    // Search filters
+    ['searchActive', 'searchArchived'].forEach(id => {
+        document.getElementById(id).addEventListener('input', function () {
+            const term = this.value.toLowerCase();
+            const rows = document.querySelectorAll(`#${id === 'searchActive' ? 'activeItemsTable' : 'archivedItemsTable'} tr`);
+            rows.forEach(row => {
+                if (row.textContent) {
+                    row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
+                }
+            });
+        });
     });
-});
 
-document.getElementById('searchArchived').addEventListener('input', function() {
-    const searchTerm = this.value.toLowerCase();
-    document.querySelectorAll('#archivedItemsTable tr').forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
-    });
-});
+    // Submit edit handler
+    function submitEdit(itemId) {
+        const form = document.getElementById(`editForm${itemId}`);
+        const msgDiv = document.getElementById(`editMsg${itemId}`);
+        const formData = new FormData(form);
+        msgDiv.innerHTML = '<div class="spinner-border spinner-border-sm" role="status"></div> Processing...';
 
-['searchActive', 'searchArchived'].forEach(id => {
-  document.getElementById(id).addEventListener('input', function () {
-    const term = this.value.toLowerCase();
-    const rows = document.querySelectorAll(`#${id === 'searchActive' ? 'activeItemsTable' : 'archivedItemsTable'} tr`);
-    rows.forEach(row => {
-      row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
-    });
-  });
-});
+        fetch(`/Admin/api/edit-item/${itemId}`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) return response.json().then(err => { throw err; });
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                msgDiv.innerHTML = `<div class="alert alert-success">${data.message}</div>`;
+                setTimeout(() => {
+                    const modal = bootstrap.Modal.getInstance(document.getElementById(`editModal${itemId}`));
+                    modal.hide();
+                    window.location.reload();
+                }, 1500);
+            } else {
+                msgDiv.innerHTML = `<div class="alert alert-danger">${data.message}</div>`;
+            }
+        })
+        .catch(error => {
+            const errorMsg = error.message || 'Unexpected error';
+            msgDiv.innerHTML = `<div class="alert alert-danger">${errorMsg}</div>`;
+        });
+    }
 </script>
-
 {% endblock %}

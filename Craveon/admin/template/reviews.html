@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
 {% block head %}
-    <title>Admin - Customer Reviews</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-         html, body {
+<title>Admin - Customer Reviews</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+    html, body {
         height: 100%;
         margin: 0;
         padding: 0;
@@ -14,63 +14,101 @@
         color: #00ffff;
         overflow-x: hidden;
     }
-        h1, h2, h3 {
-            color: #060606;
-            text-shadow: 0 0 10px #00ffff;
-        }
 
-        table {
-            background-color: #524e4e;
-            color: #00ffff;
-            border-collapse: collapse;
-            box-shadow: 0 0 10px #00ffff33;
-        }
+    h1, h2, h3 {
+        color: #060606;
+        text-shadow: 0 0 10px #00ffff;
+    }
 
-        thead {
-            background-color: #524e4e;
-            color: #e4efef;
-        }
+    table {
+        background-color: #524e4e;
+        color: #00ffff;
+        border-collapse: collapse;
+        box-shadow: 0 0 10px #00ffff33;
+    }
 
-        th, td {
-            border-bottom: 1px solid #00ffff22;
-        }
+    thead {
+        background-color: #524e4e;
+        color: #e4efef;
+    }
 
-        tbody tr:hover {
-            background-color: rgba(0, 255, 255, 0.05);
-        }
+    th, td {
+        border-bottom: 1px solid #00ffff22;
+    }
 
-        td {
-            color: #7fffd4;
-        }
+    tbody tr:hover {
+        background-color: rgba(0, 255, 255, 0.05);
+    }
 
-        .text-muted {
-            color: #999;
-        }
+    td {
+        color: #7fffd4;
+    }
 
-        .no-reviews {
-            color: #888;
-            text-align: center;
-            padding: 1rem;
-            font-style: italic;
-        }
+    .text-muted {
+        color: #999;
+    }
 
-        .shadow-md {
-            box-shadow: 0 0 12px #00ffff44;
-        }
+    .no-reviews {
+        color: #888;
+        text-align: center;
+        padding: 1rem;
+        font-style: italic;
+    }
 
-        .rounded-lg {
-            border-radius: 0.5rem;
-        }
+    .shadow-md {
+        box-shadow: 0 0 12px #00ffff44;
+    }
 
-        .glow-border {
-            border: 1px solid #00ffff44;
-        }
-    </style>
+    .rounded-lg {
+        border-radius: 0.5rem;
+    }
+
+    .glow-border {
+        border: 1px solid #00ffff44;
+    }
+
+    a {
+        text-decoration: none;
+    }
+
+    a:hover {
+        text-decoration: none;
+    }
+
+    .filter-btn {
+        background-color: #00ffff22;
+        border: 1px solid #00ffff44;
+        padding: 0.3rem 0.8rem;
+        margin-right: 0.5rem;
+        border-radius: 0.3rem;
+        color: #00ffff;
+        cursor: pointer;
+        transition: 0.3s;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .filter-btn:hover,
+    .filter-btn.active {
+        background-color: #00ffff44;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="p-8">
     <h1 class="text-3xl font-bold mb-6">Customer Reviews</h1>
+
+    <!-- Filter Buttons -->
+    <div class="mb-4">
+        <a href="{{ url_for('admin.reviews') }}"
+           class="filter-btn {{ not selected_rating and 'active' }}">All</a>
+        {% for i in range(5, 0, -1) %}
+            <a href="{{ url_for('admin.reviews', rating=i) }}"
+               class="filter-btn {{ selected_rating == i and 'active' }}">{{ i }} ⭐</a>
+        {% endfor %}
+    </div>
+
     <div class="overflow-x-auto">
         <table class="min-w-full shadow-md rounded-lg glow-border">
             <thead>
@@ -85,7 +123,9 @@
             <tbody>
                 {% for review in reviews %}
                 <tr class="hover:bg-cyan-950/20">
-                    <td class="py-3 px-6">{{ review.first_name }} {{ review.last_name }}</td>
+                    <td class="py-3 px-6">
+                        {{ review.first_name or 'Unknown' }} {{ review.last_name or '' }}
+                    </td>
                     <td class="py-3 px-6">{{ review.order_id }}</td>
                     <td class="py-3 px-6">
                         {% for i in range(review.rating) %}
@@ -93,12 +133,14 @@
                         {% endfor %}
                     </td>
                     <td class="py-3 px-6">{{ review.comment or 'No comment' }}</td>
-                    <td class="py-3 px-6">{{ review.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td class="py-3 px-6">
+                        {{ review.created_at.strftime('%Y-%m-%d %H:%M') if review.created_at else 'N/A' }}
+                    </td>
                 </tr>
                 {% endfor %}
                 {% if reviews|length == 0 %}
                 <tr>
-                    <td colspan="5" class="no-reviews">No reviews yet.</td>
+                    <td colspan="5" class="no-reviews">No reviews found for selected filter.</td>
                 </tr>
                 {% endif %}
             </tbody>

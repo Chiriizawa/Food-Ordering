@@ -19,9 +19,35 @@
     .card i { font-size:2.5rem; margin-bottom:10px; color:#f8fdfd; text-shadow:0 0 8px #00ffff; }
     .card h2 { font-size:1.5rem; margin-bottom:10px; }
     .card p { font-size:1.8rem; font-weight:bold; }
-    .chart-container { background-color:#6a6767; padding:30px; border-radius:15px; box-shadow:0 0 20px rgba(0,255,255,0.2); }
-    .chart-container h3 { color:#fcffff; text-align:center; margin-bottom:20px; text-shadow:0 0 5px #00ffff; }
-    canvas { background-color:#111827; padding:10px; border-radius:10px; }
+
+    .chart-container, .review-container {
+        background-color:#6a6767; padding:30px; border-radius:15px;
+        box-shadow:0 0 20px rgba(0,255,255,0.2); margin-bottom: 40px;
+    }
+    .chart-container h3, .review-container h3 {
+        color:#fcffff; text-align:center; margin-bottom:20px;
+        text-shadow:0 0 5px #00ffff;
+    }
+    canvas {
+        background-color:#111827; padding:10px; border-radius:10px;
+    }
+
+    table {
+        width: 100%; border-collapse: collapse; margin-top: 20px;
+    }
+    table th, table td {
+        padding: 12px 15px; border: 1px solid #00ffff; text-align: left;
+    }
+    table th {
+        background-color: #111827; color: #00ffff; text-shadow: 0 0 5px #00ffff;
+    }
+    table td {
+        color: #fff;
+    }
+    .stars {
+        color: gold;
+        text-shadow: 0 0 3px #ffff00;
+    }
 </style>
 {% endblock %}
 
@@ -38,12 +64,17 @@
             <h2>Customers</h2>
             <p>{{ total_customers }}</p>
         </div>
+        <div class="card reviews">
+            <i class="fas fa-star"></i>
+            <h2>Total Reviews</h2>
+            <p>{{ total_reviews }}</p>
+        </div>
     </div>
+
     <div class="chart-container">
         <h3>Top Selling Items (This Month)</h3>
         <canvas id="salesChart" height="100"></canvas>
     </div>
-</div>
 
 <script>
 const ctx = document.getElementById('salesChart').getContext('2d');

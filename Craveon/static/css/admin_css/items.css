@@ -1,0 +1,185 @@
+body {
+        background: linear-gradient(#898989, #62db90);
+        color: #e0e0e0;
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    h2,
+    h4,
+    h5 {
+        color: #1c1e1e;
+        text-shadow: 0 0 5px #00ffff;
+    }
+
+    .card {
+        background: linear-gradient(#524e4e);
+        border: none;
+        box-shadow: 0 0 15px rgba(0, 255, 255, 0.15);
+        color: #e0e0e0;
+        margin-bottom: 1.5rem;
+    }
+
+    .card-header {
+        background: linear-gradient(#524e4e);
+        border-bottom: 1px solid #00ffff50;
+    }
+
+    .form-label {
+        color: #ebf3f3;
+    }
+
+    .form-control,
+    .form-select {
+        background-color: #497058;
+        color: #00ffff;
+        border: 1px solid #00ffff;
+        border-radius: 8px;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        background-color: #0f172a;
+        color: #00ffff;
+        box-shadow: 0 0 10px #00ffff;
+        border-color: #00ffff;
+    }
+
+    .btn-primary {
+        background-color: #9ac1c1;
+        border: none;
+        color: #000000;
+        font-weight: bold;
+        box-shadow: 0 0 10px #83abab;
+    }
+
+    .btn-primary:hover {
+        background-color: #00e6e6;
+    }
+
+    .btn-warning,
+    .btn-danger,
+    .btn-success,
+    .btn-secondary {
+        border: none;
+        font-weight: bold;
+    }
+
+    .btn-warning {
+        background-color: #facc15;
+        color: #000;
+    }
+
+    .btn-danger {
+        background-color: #ef4444;
+        color: #fff;
+    }
+
+    .btn-success {
+        background-color: #22c55e;
+        color: #fff;
+    }
+
+    .btn-secondary {
+        background-color: #6b7280;
+        color: #fff;
+    }
+
+    .table {
+        background-color: #6a6767;
+        color: #ffffff;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .table thead {
+        background-color: #6a6767;
+        color: #00ffff;
+    }
+
+    .table td,
+    .table th {
+        vertical-align: middle;
+    }
+
+    .table-striped tbody tr:nth-of-type(odd) {
+        background-color: rgba(0, 255, 255, 0.03);
+    }
+
+    .input-group-text {
+        background-color: #0f172a;
+        border: 1px solid #00ffff;
+        color: #00ffff;
+    }
+
+    .form-control::placeholder {
+        color: #00ffff88;
+    }
+
+    .modal-content {
+        background-color: #1f2937;
+        color: #00ffff;
+        border: 1px solid #00ffff50;
+        box-shadow: 0 0 10px #00ffff40;
+    }
+
+    .alert {
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 255, 255, 0.15);
+    }
+
+    /* Archived items */
+    .archived-item {
+        opacity: 0.7;
+    }
+
+    .archived-item:hover {
+        opacity: 1;
+    }
+
+    /* Image thumbnails */
+    .img-thumbnail {
+        max-width: 80px;
+        max-height: 80px;
+        background-color: #0f172a;
+        border: 1px solid #00ffff50;
+    }
+
+    /* Action buttons */
+    .action-buttons {
+        min-width: 180px;
+    }
+
+    .btn-group .btn {
+        margin-right: 0.5rem;
+    }
+
+    /* Card header colors */
+    .bg-primary {
+        background: linear-gradient(to right, #0077ff, #00aaff) !important;
+    }
+
+    .bg-success {
+        background: linear-gradient(to right, #00aa77, #00cc88) !important;
+    }
+
+    .bg-secondary {
+        background: linear-gradient(to right, #555577, #777799) !important;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .input-group {
+            width: 100% !important;
+            margin-top: 1rem;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .btn-group .btn {
+            margin-bottom: 0.5rem;
+            margin-right: 0;
+        }
+    }

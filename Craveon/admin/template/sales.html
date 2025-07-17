@@ -83,14 +83,6 @@
         background-color: #7c9792 !important;
     }
 
-    .hidden-print {
-        display: none;
-    }
-
-    #pdf-content h2 {
-        display: none;
-    }
-
     .rounded {
         border-radius: 0.5rem;
     }
@@ -142,25 +134,34 @@
         </button>
     </div>
 
-    <!-- PDF Content -->
+    <!-- Styled Web Table -->
     <div id="pdf-content">
-        <h2 class="text-center text-xl font-bold mb-4 hidden-print">Crave On Sales Report</h2>
-
         <table class="min-w-full border divide-y divide-cyan-400">
             <thead>
                 <tr>
-                    <th class="px-4 py-2 text-left">Date</th>
-                    <th class="px-4 py-2 text-left">Year</th>
-                    <th class="px-4 py-2 text-left">Month</th>
-                    <th class="px-4 py-2 text-left">Category</th>
-                    <th class="px-4 py-2 text-left">Item</th>
-                    <th class="px-4 py-2 text-left">Quantity</th>
-                    <th class="px-4 py-2 text-left">Price</th>
-                    <th class="px-4 py-2 text-left">Commission</th>
-                    <th class="px-4 py-2 text-left">Total</th>
+                    <th>Date</th><th>Year</th><th>Month</th><th>Category</th>
+                    <th>Item</th><th>Quantity</th><th>Price</th>
+                    <th>Commission</th><th>Total</th>
                 </tr>
             </thead>
             <tbody id="sales-body"></tbody>
+        </table>
+    </div>
+
+    <!-- Hidden Plain Table for PDF Export -->
+    <div id="pdf-plain" style="display: none; color: #000; font-family: Arial, sans-serif;">
+        <div style="text-align: center; margin-bottom: 10px;">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" style="width: 100px;">
+            <h2 style="margin: 10px 0;">Crave On Sales Report</h2>
+        </div>
+        <table border="1" cellspacing="0" cellpadding="5" width="100%" style="border-collapse: collapse; font-size: 12px;">
+            <thead>
+                <tr>
+                    <th>Date</th><th>Year</th><th>Month</th><th>Category</th>
+                    <th>Item</th><th>Quantity</th><th>Price</th><th>Commission</th><th>Total</th>
+                </tr>
+            </thead>
+            <tbody id="plain-sales-body"></tbody>
         </table>
     </div>
 </div>
@@ -181,37 +182,55 @@
         const res = await fetch(url);
         const data = await res.json();
 
-        const tbody = document.getElementById('sales-body');
-        tbody.innerHTML = '';
+        const styledBody = document.getElementById('sales-body');
+        const plainBody = document.getElementById('plain-sales-body');
+        styledBody.innerHTML = '';
+        plainBody.innerHTML = '';
 
         if (data.sales.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">No sales found.</td></tr>';
+            styledBody.innerHTML = '<tr><td colspan="9" class="p-4 text-center text-gray-500">No sales found.</td></tr>';
+            plainBody.innerHTML = '<tr><td colspan="9">No sales found.</td></tr>';
             return;
         }
 
-        // Populate category and item filters (based on latest results)
         populateFilter('filter-category', [...new Set(data.sales.map(s => s.category_name))]);
         populateFilter('filter-item', [...new Set(data.sales.map(s => s.item_name))]);
 
         data.sales.forEach(sale => {
-            const row = document.createElement('tr');
             const commissionAmount = parseFloat(sale.commission);
             const isHotelUser = sale.hotel_user === true;
 
-            row.className = isHotelUser ? 'azurea-row' : '';
-
-            row.innerHTML = `
-            <td class="px-4 py-2">${new Date(sale.ordered_at).toLocaleDateString()}</td>
-            <td class="px-4 py-2">${sale.year}</td>
-            <td class="px-4 py-2">${sale.month}</td>
-            <td class="px-4 py-2">${sale.category_name}</td>
-            <td class="px-4 py-2">${sale.item_name}</td>
-            <td class="px-4 py-2">${sale.quantity}</td>
-            <td class="px-4 py-2">₱${parseFloat(sale.price).toFixed(2)}</td>
-            <td class="px-4 py-2 ${isHotelUser ? 'font-bold text-cyan-300' : ''}">₱${commissionAmount.toFixed(2)} ${isHotelUser ? '<span class="badge bg-info">Azurea</span>' : ''}</td>
-            <td class="px-4 py-2">₱${parseFloat(sale.total).toFixed(2)}</td>
+            // Styled table row (web)
+            const styledRow = document.createElement('tr');
+            styledRow.innerHTML = `
+                <td>${new Date(sale.ordered_at).toLocaleDateString()}</td>
+                <td>${sale.year}</td>
+                <td>${sale.month}</td>
+                <td>${sale.category_name}</td>
+                <td>${sale.item_name}</td>
+                <td>${sale.quantity}</td>
+                <td>₱${parseFloat(sale.price).toFixed(2)}</td>
+                <td class="${isHotelUser ? 'font-bold text-cyan-300' : ''}">
+                    ₱${commissionAmount.toFixed(2)} ${isHotelUser ? '<span class="badge bg-info">Azurea</span>' : ''}
+                </td>
+                <td>₱${parseFloat(sale.total).toFixed(2)}</td>
             `;
-            tbody.appendChild(row);
+            styledBody.appendChild(styledRow);
+
+            // Plain table row (for PDF)
+            const plainRow = document.createElement('tr');
+            plainRow.innerHTML = `
+                <td>${new Date(sale.ordered_at).toLocaleDateString()}</td>
+                <td>${sale.year}</td>
+                <td>${sale.month}</td>
+                <td>${sale.category_name}</td>
+                <td>${sale.item_name}</td>
+                <td>${sale.quantity}</td>
+                <td>₱${parseFloat(sale.price).toFixed(2)}</td>
+                <td>₱${commissionAmount.toFixed(2)}</td>
+                <td>₱${parseFloat(sale.total).toFixed(2)}</td>
+            `;
+            plainBody.appendChild(plainRow);
         });
     }
 
@@ -242,20 +261,41 @@
     }
 
     function downloadPDF() {
-        const title = document.querySelector('#pdf-content h2');
-        title.style.display = 'block';
+        const pdfSection = document.getElementById('pdf-plain');
+        const plainBody = document.getElementById('plain-sales-body');
+        const styledRows = document.querySelectorAll('#sales-body tr');
 
-        const element = document.getElementById('pdf-content');
+        plainBody.innerHTML = '';
+        styledRows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            if (cells.length) {
+                const tr = document.createElement('tr');
+                cells.forEach(cell => {
+                    const td = document.createElement('td');
+                    td.textContent = cell.textContent.replace(/\s*Azurea\s*/g, '').trim();
+                    tr.appendChild(td);
+                });
+                plainBody.appendChild(tr);
+            }
+        });
+
+        pdfSection.style.display = 'block';
+
         const opt = {
             margin: 0.5,
             filename: `Sales_Report_${new Date().toISOString().slice(0, 10)}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
+            html2canvas: {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: '#ffffff'
+            },
             jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
         };
 
-        html2pdf().set(opt).from(element).save().then(() => {
-            title.style.display = 'none';
+        html2pdf().set(opt).from(pdfSection).save().then(() => {
+            pdfSection.style.display = 'none';
         });
     }
 
