@@ -224,7 +224,7 @@ function loadOrders() {
                     if (order.items && order.items.length > 0) {
                         allOrders.push({
                             ...order,
-                            customer_name: customer.customer.full_name + (customer.customer.hotel_user ? ' <span class="badge bg-info">Azurea Hotel User</span>' : ''),
+                            customer_name: customer.customer.full_name,
                             customer_email: customer.customer.email,
                             customer_contact: customer.customer.contact,    
                             customer_address: customer.customer.address
@@ -289,7 +289,6 @@ function displayOrdersForPage(page) {
             statusText = order.status;
         }
 
-        // Payment screenshot thumbnail
         let paymentSSHtml = '<span class="text-gray-400">None</span>';
         if (order.payment_ss && order.payment_ss.trim() !== '') {
             const src = order.payment_ss.startsWith('data:image') ? order.payment_ss : `data:image/jpeg;base64,${order.payment_ss}`;

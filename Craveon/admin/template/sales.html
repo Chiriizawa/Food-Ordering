@@ -5,7 +5,8 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
-    html, body {
+    html,
+    body {
         height: 100%;
         margin: 0;
         padding: 0;
@@ -16,12 +17,15 @@
         overflow-x: hidden;
     }
 
-    h1, h2 {
+    h1,
+    h2 {
         color: #0e0e0e;
         text-shadow: 0 0 6px #00ffffaa;
     }
 
-    select, .border, .bg-white {
+    select,
+    .border,
+    .bg-white {
         background-color: #524e4e !important;
         color: #fff4f4 !important;
         border: 1px solid #00ffff80 !important;
@@ -56,7 +60,8 @@
         background-color: rgba(0, 255, 255, 0.08);
     }
 
-    th, td {
+    th,
+    td {
         padding: 12px;
         border-bottom: 1px solid #00ffff22;
     }
@@ -88,6 +93,12 @@
 
     .rounded {
         border-radius: 0.5rem;
+    }
+
+    .azurea-hotel {
+        background-color: rgba(0, 255, 255, 0.08);
+        border-left: 4px solid #00ffff;
+        box-shadow: inset 0 0 5px #00ffff55;
     }
 </style>
 {% endblock %}
@@ -145,6 +156,7 @@
                     <th class="px-4 py-2 text-left">Item</th>
                     <th class="px-4 py-2 text-left">Quantity</th>
                     <th class="px-4 py-2 text-left">Price</th>
+                    <th class="px-4 py-2 text-left">Commission</th>
                     <th class="px-4 py-2 text-left">Total</th>
                 </tr>
             </thead>
@@ -154,101 +166,106 @@
 </div>
 
 <script>
-async function loadSales() {
-    const year = document.getElementById('filter-year').value;
-    const month = document.getElementById('filter-month').value;
-    const category = document.getElementById('filter-category').value;
-    const item = document.getElementById('filter-item').value;
+    async function loadSales() {
+        const year = document.getElementById('filter-year').value;
+        const month = document.getElementById('filter-month').value;
+        const category = document.getElementById('filter-category').value;
+        const item = document.getElementById('filter-item').value;
 
-    const url = new URL(window.location.origin + '/Admin/api/sales');
-    if (year) url.searchParams.append('year', year);
-    if (month) url.searchParams.append('month', month);
-    if (category) url.searchParams.append('category', category);
-    if (item) url.searchParams.append('item', item);
+        const url = new URL(window.location.origin + '/Admin/api/sales');
+        if (year) url.searchParams.append('year', year);
+        if (month) url.searchParams.append('month', month);
+        if (category) url.searchParams.append('category', category);
+        if (item) url.searchParams.append('item', item);
 
-    const res = await fetch(url);
-    const data = await res.json();
+        const res = await fetch(url);
+        const data = await res.json();
 
-    const tbody = document.getElementById('sales-body');
-    tbody.innerHTML = '';
+        const tbody = document.getElementById('sales-body');
+        tbody.innerHTML = '';
 
-    if (data.sales.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">No sales found.</td></tr>';
-        return;
+        if (data.sales.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">No sales found.</td></tr>';
+            return;
+        }
+
+        // Populate category and item filters (based on latest results)
+        populateFilter('filter-category', [...new Set(data.sales.map(s => s.category_name))]);
+        populateFilter('filter-item', [...new Set(data.sales.map(s => s.item_name))]);
+
+        data.sales.forEach(sale => {
+            const row = document.createElement('tr');
+            const commissionAmount = parseFloat(sale.commission);
+            const isHotelUser = sale.hotel_user === true;
+
+            row.className = isHotelUser ? 'azurea-row' : '';
+
+            row.innerHTML = `
+            <td class="px-4 py-2">${new Date(sale.ordered_at).toLocaleDateString()}</td>
+            <td class="px-4 py-2">${sale.year}</td>
+            <td class="px-4 py-2">${sale.month}</td>
+            <td class="px-4 py-2">${sale.category_name}</td>
+            <td class="px-4 py-2">${sale.item_name}</td>
+            <td class="px-4 py-2">${sale.quantity}</td>
+            <td class="px-4 py-2">₱${parseFloat(sale.price).toFixed(2)}</td>
+            <td class="px-4 py-2 ${isHotelUser ? 'font-bold text-cyan-300' : ''}">₱${commissionAmount.toFixed(2)} ${isHotelUser ? '<span class="badge bg-info">Azurea</span>' : ''}</td>
+            <td class="px-4 py-2">₱${parseFloat(sale.total).toFixed(2)}</td>
+            `;
+            tbody.appendChild(row);
+        });
     }
 
-    // Populate category and item filters (based on latest results)
-    populateFilter('filter-category', [...new Set(data.sales.map(s => s.category_name))]);
-    populateFilter('filter-item', [...new Set(data.sales.map(s => s.item_name))]);
+    function populateFilter(id, values) {
+        const select = document.getElementById(id);
+        const current = select.value;
+        select.innerHTML = `<option value="">All ${id.split('-')[1].replace(/^\w/, c => c.toUpperCase())}s</option>`;
+        values.forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v;
+            opt.textContent = v;
+            if (v === current) opt.selected = true;
+            select.appendChild(opt);
+        });
+    }
 
-    data.sales.forEach(sale => {
-    const row = document.createElement('tr');
-    row.innerHTML = `
-        <td class="px-4 py-2">${new Date(sale.ordered_at).toLocaleDateString()}</td>
-        <td class="px-4 py-2">${sale.year}</td>
-        <td class="px-4 py-2">${sale.month}</td>
-        <td class="px-4 py-2">${sale.category_name}</td>
-        <td class="px-4 py-2">${sale.item_name}</td>
-        <td class="px-4 py-2">${sale.quantity}</td>
-        <td class="px-4 py-2">₱${parseFloat(sale.price).toFixed(2)}</td>
-        <td class="px-4 py-2">₱${parseFloat(sale.total).toFixed(2)}</td>
-    `;
-    tbody.appendChild(row);
-});
+    async function loadYears() {
+        const res = await fetch('/Admin/api/sales');
+        const data = await res.json();
+        const years = [...new Set(data.sales.map(s => s.year))];
+        const select = document.getElementById('filter-year');
+        years.forEach(year => {
+            const opt = document.createElement('option');
+            opt.value = year;
+            opt.textContent = year;
+            select.appendChild(opt);
+        });
+    }
 
-}
+    function downloadPDF() {
+        const title = document.querySelector('#pdf-content h2');
+        title.style.display = 'block';
 
-function populateFilter(id, values) {
-    const select = document.getElementById(id);
-    const current = select.value;
-    select.innerHTML = `<option value="">All ${id.split('-')[1].replace(/^\w/, c => c.toUpperCase())}s</option>`;
-    values.forEach(v => {
-        const opt = document.createElement('option');
-        opt.value = v;
-        opt.textContent = v;
-        if (v === current) opt.selected = true;
-        select.appendChild(opt);
+        const element = document.getElementById('pdf-content');
+        const opt = {
+            margin: 0.5,
+            filename: `Sales_Report_${new Date().toISOString().slice(0, 10)}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+
+        html2pdf().set(opt).from(element).save().then(() => {
+            title.style.display = 'none';
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadYears();
+        loadSales();
+
+        ['filter-year', 'filter-month', 'filter-category', 'filter-item'].forEach(id => {
+            document.getElementById(id).addEventListener('change', loadSales);
+        });
     });
-}
-
-async function loadYears() {
-    const res = await fetch('/Admin/api/sales');
-    const data = await res.json();
-    const years = [...new Set(data.sales.map(s => s.year))];
-    const select = document.getElementById('filter-year');
-    years.forEach(year => {
-        const opt = document.createElement('option');
-        opt.value = year;
-        opt.textContent = year;
-        select.appendChild(opt);
-    });
-}
-
-function downloadPDF() {
-    const title = document.querySelector('#pdf-content h2');
-    title.style.display = 'block';
-
-    const element = document.getElementById('pdf-content');
-    const opt = {
-        margin: 0.5,
-        filename: `Sales_Report_${new Date().toISOString().slice(0, 10)}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-    };
-
-    html2pdf().set(opt).from(element).save().then(() => {
-        title.style.display = 'none';
-    });
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    loadYears();
-    loadSales();
-
-    ['filter-year', 'filter-month', 'filter-category', 'filter-item'].forEach(id => {
-        document.getElementById(id).addEventListener('change', loadSales);
-    });
-});
 </script>
 {% endblock %}

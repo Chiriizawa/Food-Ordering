@@ -197,16 +197,16 @@
     <h2 class="text-center mb-4">Manage Menu Items</h2>
     
     <!-- Flash Messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
+   {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
     
     <!-- Add Item Form -->
     <div class="card p-4 shadow">
@@ -289,37 +289,77 @@
                         </tr>
                     </thead>
                     <tbody id="activeItemsTable">
-                        {% for item in items %}
-                        <tr>
-                            <td>
-                                {% if item[3] %}
-                                    <img src="data:image/jpeg;base64,{{ item[3] }}" class="img-thumbnail">
-                                {% else %}
-                                    <span class="text-muted">No Image</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ item[1] }}</td>
-                            <td>₱{{ "%.2f"|format(item[2]) }}</td>
-                            <td>{{ item[5] }}</td>
-                            <td>
-                                <div class="btn-group">
-                                    <button class="btn btn-warning btn-sm" data-bs-toggle="modal" 
-                                            data-bs-target="#editModal{{ item[0] }}">
-                                        <i class="fas fa-edit me-1"></i>Edit
-                                    </button>
-                                    <a href="{{ url_for('admin.archive_item', item_id=item[0]) }}" 
-                                       class="btn btn-danger btn-sm" 
-                                       onclick="return confirm('Archive this item?')">
-                                        <i class="fas fa-archive me-1"></i>Archive
-                                    </a>
+                        {% if items %}
+                            {% for item in items %}
+                                <tr>
+                                    <td>
+                                        {% if item[3] %}
+                                            <img src="data:image/jpeg;base64,{{ item[3] }}" class="img-thumbnail">
+                                        {% else %}
+                                            <span class="text-muted">No Image</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ item[1] }}</td>
+                                    <td>₱{{ "%.2f"|format(item[2]) }}</td>
+                                    <td>{{ item[5] }}</td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editModal{{ item[0] }}">
+                                                <i class="fas fa-edit me-1"></i>Edit
+                                            </button>
+                                            <a href="{{ url_for('admin.archive_item', item_id=item[0]) }}" class="btn btn-danger btn-sm" onclick="return confirm('Archive this item?')">
+                                                <i class="fas fa-archive me-1"></i>Archive
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- Edit Modal -->
+                                <div class="modal fade" id="editModal{{ item[0] }}" tabindex="-1" aria-labelledby="editModalLabel{{ item[0] }}" aria-hidden="true">
+                                  <div class="modal-dialog modal-lg">
+                                    <form action="{{ url_for('admin.edit_item', item_id=item[0]) }}" method="POST" enctype="multipart/form-data" class="modal-content">
+                                      <div class="modal-header bg-primary">
+                                        <h5 class="modal-title" id="editModalLabel{{ item[0] }}">Edit “{{ item[1] }}”</h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                      </div>
+                                      <div class="modal-body">
+                                        <div class="row g-3">
+                                          <div class="col-md-6">
+                                            <label class="form-label">Item Name</label>
+                                            <input name="name" type="text" class="form-control" value="{{ item[1] }}" required>
+                                          </div>
+                                          <div class="col-md-6">
+                                            <label class="form-label">Price</label>
+                                            <input name="price" type="number" step="0.01" class="form-control" value="{{ item[2] }}" required>
+                                          </div>
+                                          <div class="col-md-6">
+                                            <label class="form-label">Category</label>
+                                            <select name="category_id" class="form-select" required>
+                                              {% for cat in categories %}
+                                                <option value="{{ cat[0] }}" {% if cat[0] == item[4] %}selected{% endif %}>{{ cat[1] }}</option>
+                                              {% endfor %}
+                                            </select>
+                                          </div>
+                                          <div class="col-md-6">
+                                            <label class="form-label">Change Image</label>
+                                            <input name="image" type="file" class="form-control">
+                                            <small class="text-secondary">Leave blank to keep current</small>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-warning">Save Changes</button>
+                                      </div>
+                                    </form>
+                                  </div>
                                 </div>
-                            </td>
-                        </tr>
+                            {% endfor %}
                         {% else %}
-                        <tr>
-                            <td colspan="5" class="text-center py-4">No active items found</td>
-                        </tr>
-                        {% endfor %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4">No active items found</td>
+                            </tr>
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
@@ -381,10 +421,8 @@
         </div>
     </div>
 </div>
-
-<!-- JavaScript -->
 <script>
-// Search functionality
+
 document.getElementById('searchActive').addEventListener('input', function() {
     const searchTerm = this.value.toLowerCase();
     document.querySelectorAll('#activeItemsTable tr').forEach(row => {
@@ -399,6 +437,16 @@ document.getElementById('searchArchived').addEventListener('input', function() {
         const text = row.textContent.toLowerCase();
         row.style.display = text.includes(searchTerm) ? '' : 'none';
     });
+});
+
+['searchActive', 'searchArchived'].forEach(id => {
+  document.getElementById(id).addEventListener('input', function () {
+    const term = this.value.toLowerCase();
+    const rows = document.querySelectorAll(`#${id === 'searchActive' ? 'activeItemsTable' : 'archivedItemsTable'} tr`);
+    rows.forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
+    });
+  });
 });
 </script>
 

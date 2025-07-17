@@ -18,7 +18,7 @@ DB_CONFIGS = {
         'password': 'ClodAndrei8225',
     },
     'flask_connection': {
-        'host': '192.168.1.65',
+        'host': '192.168.1.11',
         'database': 'hotel_management',
         'user': 'root',
         'password': 'admin',
@@ -32,10 +32,10 @@ def get_db_config():
 def connect_db():
     return mysql.connector.connect(**get_db_config())
 
-ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif'}
-
 def allowed_file(filename):
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 def make_header(response):
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, proxy-revalidate'
@@ -52,46 +52,64 @@ def index():
     if 'admin' not in session:
         return redirect(url_for('admin.login'))
 
-    db = connect_db()
-    cursor = db.cursor()
+    conn = connect_db()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        # Total customers
+        cursor.execute("SELECT COUNT(*) AS cnt FROM users")
+        total_customers = cursor.fetchone()['cnt']
 
-    # Total customers
-    cursor.execute("SELECT COUNT(*) FROM users")
-    total_customers = cursor.fetchone()[0]
+        # Total profit (sales minus 20% commission on hotel_user orders)
+        cursor.execute("""
+            SELECT COALESCE(SUM(
+                (i.price * oi.quantity)
+              - CASE WHEN u.hotel_user = 1
+                     THEN (i.price * oi.quantity * 0.2)
+                     ELSE 0
+                END
+            ), 0) AS total_profit
+            FROM orders o
+            JOIN order_items oi ON o.order_id = oi.order_id
+            JOIN items i        ON oi.item_id   = i.item_id
+            JOIN users u        ON o.user_id     = u.user_id
+            WHERE o.status = 'Completed'
+        """)
+        total_profit = float(cursor.fetchone()['total_profit'])
 
-    # Total sales (completed only)
-    cursor.execute("SELECT SUM(total_amount) FROM orders WHERE status = 'Completed'")
-    result = cursor.fetchone()[0]
-    total_sales = result if result else 0
+        # Top-selling items this month: quantity & total revenue
+        cursor.execute("""
+            SELECT 
+                i.item_name, 
+                SUM(oi.quantity)           AS total_quantity, 
+                SUM(oi.quantity * i.price) AS total_revenue
+            FROM order_items oi
+            JOIN items i ON oi.item_id = i.item_id
+            JOIN orders o ON oi.order_id = o.order_id
+            WHERE o.status = 'Completed'
+              AND MONTH(o.ordered_at) = MONTH(CURRENT_DATE())
+              AND YEAR(o.ordered_at)  = YEAR(CURRENT_DATE())
+            GROUP BY i.item_name
+            ORDER BY total_quantity DESC
+            LIMIT 7
+        """)
+        popular_items = cursor.fetchall()
 
-    # Top-selling items this month: quantity & total revenue
-    cursor.execute("""
-        SELECT 
-            i.item_name, 
-            SUM(oi.quantity) AS total_quantity, 
-            SUM(oi.quantity * i.price) AS total_revenue
-        FROM order_items oi
-        JOIN items i ON oi.item_id = i.item_id
-        JOIN orders o ON oi.order_id = o.order_id
-        WHERE MONTH(o.ordered_at) = MONTH(CURRENT_DATE())
-          AND YEAR(o.ordered_at) = YEAR(CURRENT_DATE())
-          AND o.status = 'Completed'
-        GROUP BY i.item_name
-        ORDER BY total_quantity DESC
-        LIMIT 10
-    """)
-    popular_items = cursor.fetchall()
+        item_names    = [row['item_name']       for row in popular_items]
+        item_sales    = [int(row['total_quantity'])  for row in popular_items]
+        item_revenues = [float(row['total_revenue']) for row in popular_items]
 
-    item_names = [item[0] for item in popular_items]
-    item_quantities = [item[1] for item in popular_items]
-    item_revenues = [float(item[2]) for item in popular_items]  # Ensure float for JSON
+        return render_template(
+            'index.html',
+            total_profit=total_profit,
+            total_customers=total_customers,
+            item_names=item_names,
+            item_sales=item_sales,
+            item_revenues=item_revenues
+        )
+    finally:
+        cursor.close()
+        conn.close()
 
-    return render_template('index.html',
-                           total_customers=total_customers,
-                           total_sales=total_sales,
-                           item_names=item_names,
-                           item_sales=item_quantities,
-                           item_revenues=item_revenues)
 
 
 @admin.route('/login', methods=['GET', 'POST'])
@@ -355,52 +373,6 @@ def unarchive_category(category_id):
     session['message'] = "Category unarchived successfully."
     return redirect(url_for('admin.categories'))
 
-@admin.route('/api/Manage-Item', methods=['GET'])
-def manage_items():
-    try:
-        connection = connect_db()
-        cursor = connection.cursor(dictionary=True)
-
-        # Fetch active items
-        cursor.execute("""
-            SELECT items.item_id, items.item_name, items.price, items.image, items.category_id, categories.category_name
-            FROM items
-            LEFT JOIN categories ON items.category_id = categories.category_id
-            WHERE items.is_archived = FALSE
-        """)
-        active_items = cursor.fetchall()
-
-        # Fetch archived items
-        cursor.execute("""
-            SELECT items.item_id, items.item_name, items.price, items.image, items.category_id, categories.category_name
-            FROM items
-            LEFT JOIN categories ON items.category_id = categories.category_id
-            WHERE items.is_archived = TRUE
-        """)
-        archived_items = cursor.fetchall()
-
-        def process_items(raw_items):
-            result = []
-            for item in raw_items:
-                item_id, item_name, price, image_data, category_id, category_name = item.values()
-                image_base64 = base64.b64encode(image_data).decode('utf-8') if image_data else None
-                result.append({
-                    'item_id': item_id,
-                    'item_name': item_name,
-                    'price': float(price),
-                    'image': image_base64,
-                    'category_id': category_id,
-                    'category_name': category_name or "Uncategorized"
-                })
-            return result
-        return jsonify({
-            'data': {
-                'active_items': process_items(active_items),
-                'archived_items': process_items(archived_items)
-            }
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
     
 @admin.route('/api/Manage-Item', methods=['GET'])
 def api_manage_item():
@@ -652,92 +624,90 @@ def restore_item(item_id):
 
 @admin.route('/edit-item/<int:item_id>', methods=['POST'])
 def edit_item(item_id):
+    if 'admin' not in session:
+        flash("You need to login first", "danger")
+        return redirect(url_for('admin.login'))
+
     try:
         connection = connect_db()
-        cursor = connection.cursor()
-        cursor.execute("SELECT * FROM items WHERE item_id = %s", (item_id,))
-        item = cursor.fetchone()
+        cursor = connection.cursor(dictionary=True)
 
-        if not item:
-            flash("Item not found.", "danger")
+        # Get form data
+        name = request.form.get('name', '').strip()
+        price = request.form.get('price', '').strip()
+        category_id = request.form.get('category_id')
+        image = request.files.get('image')
+
+        # Validate inputs
+        errors = []
+        
+        # Name validation
+        if not name:
+            errors.append("Item name is required.")
+        elif len(name) < 2 or len(name) > 50:
+            errors.append("Item name must be between 2-50 characters.")
+            
+        # Price validation
+        try:
+            price = float(price)
+            if price <= 0:
+                errors.append("Price must be positive.")
+        except ValueError:
+            errors.append("Invalid price format.")
+            
+        # Image validation (only if new image is provided)
+        image_data = None
+        if image and image.filename:
+            if not allowed_file(image.filename):
+                errors.append("Only JPG, JPEG, PNG, GIF allowed.")
+            else:
+                image_data = image.read()
+
+        if errors:
+            for error in errors:
+                flash(error, "danger")
             return redirect(url_for('admin.manageitem'))
 
-        item_name, price, image_data, category_id = item[1], item[2], item[3], item[4]
+        # Build the update query based on provided fields
+        update_fields = []
+        params = []
+        
+        update_fields.append("item_name = %s")
+        params.append(name)
+        
+        update_fields.append("price = %s")
+        params.append(price)
+        
+        update_fields.append("category_id = %s")
+        params.append(category_id)
+        
+        if image_data:
+            update_fields.append("image = %s")
+            params.append(image_data)
+        
+        params.append(item_id)  # For WHERE clause
 
-        cursor.execute("SELECT category_id, category_name FROM categories")
-        categories = cursor.fetchall()
-
-    except Exception as e:
-        flash(f"Error fetching item details: {str(e)}", "danger")
-        return redirect(url_for('admin.manageitem'))
-
-    error_edit_item = None
-    error_edit_price = None
-    error_edit_image = None
-
-    name = request.form.get('name', '').strip()
-    price_input = request.form.get('price', '').strip()
-    category_id = request.form.get('category_id', '').strip()
-    image = request.files.get('image')
-
-    valid = True
-
-   
-    if not name:
-        error_edit_item = "Item name is required."
-        valid = False
-    elif not all(word.isalpha() for word in name.split()):
-        error_edit_item = "Item name must contain only letters and spaces. No numbers or symbols."
-        valid = False
-    elif len(name) < 4 or len(name) > 19:
-        error_edit_item = "Item name must be between 4 and 19 characters long."
-        valid = False
-
-   
-    try:
-        price = float(price_input)
-        if price < 0:
-            error_edit_price = "Price cannot be negative."
-            valid = False
-    except ValueError:
-        error_edit_price = "Invalid price format."
-        valid = False
-
-    
-    if image and image.filename != '':
-        if not allowed_file(image.filename):
-            error_edit_image = "Invalid file format. Only images (JPG, JPEG, PNG, GIF) are allowed."
-            valid = False
-        if valid: 
-            image_data = image.read()
-
-    if not valid:
-        flash(error_edit_item or error_edit_price or error_edit_image, "danger")
-        return redirect(url_for('admin.manageitem'))
-
-    try:
-        if image and image.filename != '': 
-            cursor.execute(
-                "UPDATE items SET item_name=%s, price=%s, image=%s, category_id=%s WHERE item_id=%s",
-                (name, price, image_data, category_id, item_id)
-            )
-        else:  
-            cursor.execute(
-                "UPDATE items SET item_name=%s, price=%s, category_id=%s WHERE item_id=%s",
-                (name, price, category_id, item_id)
-            )
-
+        # Execute the update
+        query = f"""
+            UPDATE items 
+            SET {', '.join(update_fields)}
+            WHERE item_id = %s
+        """
+        cursor.execute(query, tuple(params))
         connection.commit()
+
         flash("Item updated successfully!", "success")
+        return redirect(url_for('admin.manageitem'))
 
     except Exception as e:
         flash(f"Error updating item: {str(e)}", "danger")
+        return redirect(url_for('admin.manageitem'))
 
     finally:
-        cursor.close()
-        connection.close()
-
-    return redirect(url_for('admin.manageitem')) 
+        if 'cursor' in locals() and cursor:
+            cursor.close()
+        if 'connection' in locals() and connection:
+            connection.close()
 
 @admin.route('/Manage-Orders', methods=['GET'])
 def morders():
@@ -981,11 +951,22 @@ def get_sales_data():
             c.category_name,
             i.price,
             oi.quantity,
-            (oi.quantity * i.price) AS total
+            u.hotel_user,  # Add this to identify Azurea users
+            (i.price * oi.quantity) AS sales,
+            CASE 
+                WHEN u.hotel_user = 1 THEN (i.price * oi.quantity * 0.2)
+                ELSE 0
+            END AS commission,
+            (i.price * oi.quantity) - 
+            CASE 
+                WHEN u.hotel_user = 1 THEN (i.price * oi.quantity * 0.2)
+                ELSE 0
+            END AS total
         FROM orders o
         JOIN order_items oi ON o.order_id = oi.order_id
         JOIN items i ON oi.item_id = i.item_id
         JOIN categories c ON i.category_id = c.category_id
+        JOIN users u ON o.user_id = u.user_id
         WHERE o.status = 'Completed'
     """
 
@@ -1009,34 +990,83 @@ def get_sales_data():
     rows = cursor.fetchall()
 
     for row in rows:
+        row['hotel_user'] = bool(row['hotel_user'])
         row["year"] = row["ordered_at"].year
         row["month_number"] = row["ordered_at"].month
         row["month"] = row["ordered_at"].strftime('%B')
+        
+        row["price"] = float(row["price"])
+        row["commission"] = float(row["commission"])
+        row["total"] = float(row["total"])
 
     cursor.close()
     conn.close()
     return jsonify({'sales': rows})
 
 
-@admin.route('/dashboard')
+@admin.route('/dashboard', methods=['GET'])
 def admin_dashboard():
-    data = {
-        'total_sales': 25680.00,
-        'total_orders': 184,
-        'total_customers': 1248,
-        'avg_order_value': 139.57,
-        'revenue_data': [1200, 1900, 1500, 2200, 1800, 2500, 3000],
-        'revenue_dates': ['1', '5', '10', '15', '20', '25', '30'],
-        'category_sales': [45, 25, 20, 10],
-        'categories': ['Food', 'Beverages', 'Desserts', 'Snacks'],
-        'top_items': ['Burger Deluxe', 'Pasta Carbonara', 'Chicken BBQ', 'Milkshake', 'Pizza Supreme', 'Caesar Salad', 'Cheesecake'],
-        'top_quantities': [140, 120, 95, 85, 75, 65, 50],
-        'top_revenues': [1400, 1200, 950, 850, 750, 650, 500],
-        'recent_orders': [
-            {'id': 'CR-7842', 'customer': 'John Smith', 'date': 'Jul 8, 2023', 'amount': '1,240.00', 'status': 'completed'},
-        ]
-    }
-    return render_template('index.html', **data)
+    if 'admin' not in session:
+        return redirect(url_for('admin.login'))
+
+    conn = connect_db()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        # Total customers
+        cursor.execute("SELECT COUNT(*) AS cnt FROM users")
+        total_customers = cursor.fetchone()['cnt']
+
+        # Compute total profit exactly like /api/sales does:
+        cursor.execute("""
+            SELECT 
+              COALESCE(SUM(
+                (i.price * oi.quantity)
+                - CASE WHEN u.hotel_user = 1 
+                       THEN (i.price * oi.quantity * 0.2)
+                       ELSE 0
+                  END
+              ), 0) AS total_profit
+            FROM orders o
+            JOIN order_items oi ON o.order_id = oi.order_id
+            JOIN items i        ON oi.item_id   = i.item_id
+            JOIN users u        ON o.user_id     = u.user_id
+            WHERE o.status = 'Completed'
+        """)
+        total_profit = float(cursor.fetchone()['total_profit'])
+
+        # Top 7 selling items this month (quantity & revenue)
+        cursor.execute("""
+            SELECT
+              i.item_name,
+              SUM(oi.quantity)            AS total_quantity,
+              SUM(oi.quantity * i.price)  AS total_revenue
+            FROM orders o
+            JOIN order_items oi ON o.order_id = oi.order_id
+            JOIN items i        ON oi.item_id   = i.item_id
+            WHERE o.status = 'Completed'
+              AND MONTH(o.ordered_at) = MONTH(CURRENT_DATE())
+              AND YEAR(o.ordered_at)  = YEAR(CURRENT_DATE())
+            GROUP BY i.item_name
+            ORDER BY total_quantity DESC
+            LIMIT 7
+        """)
+        rows = cursor.fetchall()
+        item_names    = [r['item_name']       for r in rows]
+        item_sales    = [int(r['total_quantity'])  for r in rows]
+        item_revenues = [float(r['total_revenue']) for r in rows]
+
+        return render_template(
+            'index.html',
+            total_profit=total_profit,
+            total_customers=total_customers,
+            item_names=item_names,
+            item_sales=item_sales,
+            item_revenues=item_revenues
+        )
+    finally:
+        cursor.close()
+        conn.close()
+
 
 @admin.route('/reviews')
 def reviews():

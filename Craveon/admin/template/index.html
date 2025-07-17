@@ -12,72 +12,16 @@
         color: #e0e0e0;
         font-family: 'Orbitron', sans-serif;
     }
-
-    .container {
-        padding: 30px;
-    }
-
-    .card-container {
-        display: flex;
-        justify-content: space-around;
-        gap: 20px;
-        flex-wrap: wrap;
-        margin-bottom: 40px;
-    }
-
-    .card {
-        background: linear-gradient(#6a6767);
-        color: #00ffff;
-        border-radius: 15px;
-        padding: 20px 30px;
-        box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
-        text-align: center;
-        flex: 1;
-        min-width: 280px;
-        transition: transform 0.3s ease;
-    }
-
-    .card:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 0 25px rgba(0, 255, 255, 0.6);
-    }
-
-    .card i {
-        font-size: 2.5rem;
-        margin-bottom: 10px;
-        color: #f8fdfd;
-        text-shadow: 0 0 8px #00ffff;
-    }
-
-    .card h2 {
-        font-size: 1.5rem;
-        margin-bottom: 10px;
-    }
-
-    .card p {
-        font-size: 1.8rem;
-        font-weight: bold;
-    }
-
-    .chart-container {
-        background-color: #6a6767;
-        padding: 30px;
-        border-radius: 15px;
-        box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
-    }
-
-    .chart-container h3 {
-        color:  #fcffff;
-        text-align: center;
-        margin-bottom: 20px;
-        text-shadow: 0 0 5px #00ffff;
-    }
-
-    canvas {
-        background-color: #111827;
-        padding: 10px;
-        border-radius: 10px;
-    }
+    .container { padding: 30px; }
+    .card-container { display: flex; justify-content: space-around; gap: 20px; flex-wrap: wrap; margin-bottom: 40px; }
+    .card { background: linear-gradient(#6a6767); color: #00ffff; border-radius: 15px; padding: 20px 30px; box-shadow: 0 0 20px rgba(0,255,255,0.3); text-align: center; flex:1; min-width:280px; transition: transform 0.3s ease; }
+    .card:hover { transform: translateY(-8px); box-shadow: 0 0 25px rgba(0,255,255,0.6); }
+    .card i { font-size:2.5rem; margin-bottom:10px; color:#f8fdfd; text-shadow:0 0 8px #00ffff; }
+    .card h2 { font-size:1.5rem; margin-bottom:10px; }
+    .card p { font-size:1.8rem; font-weight:bold; }
+    .chart-container { background-color:#6a6767; padding:30px; border-radius:15px; box-shadow:0 0 20px rgba(0,255,255,0.2); }
+    .chart-container h3 { color:#fcffff; text-align:center; margin-bottom:20px; text-shadow:0 0 5px #00ffff; }
+    canvas { background-color:#111827; padding:10px; border-radius:10px; }
 </style>
 {% endblock %}
 
@@ -86,8 +30,8 @@
     <div class="card-container">
         <div class="card sales">
             <i class="fas fa-peso-sign"></i>
-            <h2>Total Sales</h2>
-            <p>₱{{ total_sales }}</p>
+            <h2>Total Profit</h2>
+            <p>₱{{ '%.2f'|format(total_profit) }}</p>
         </div>
         <div class="card customers">
             <i class="fas fa-users"></i>
@@ -95,7 +39,6 @@
             <p>{{ total_customers }}</p>
         </div>
     </div>
-
     <div class="chart-container">
         <h3>Top Selling Items (This Month)</h3>
         <canvas id="salesChart" height="100"></canvas>
@@ -103,78 +46,36 @@
 </div>
 
 <script>
-
-    
-    const ctx = document.getElementById('salesChart').getContext('2d');
-    const salesChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: {{ item_names | tojson }},
-            datasets: [
-                {
-                    label: 'Quantity Sold',
-                    data: {{ item_sales | tojson }},
-                    backgroundColor: 'rgba(0, 255, 255, 0.5)',
-                    borderColor: 'rgba(0, 255, 255, 1)',
-                    borderWidth: 1,
-                    yAxisID: 'y1'
-                },
-                {
-                    label: 'Total Revenue (₱)',
-                    data: {{ item_revenues | tojson }},
-                    type: 'line',
-                    borderColor: 'rgba(255, 99, 132, 1)',
-                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                    yAxisID: 'y2',
-                    tension: 0.3,
-                    fill: true
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    labels: {
-                        color: '#00ffff'
-                    }
-                }
+const ctx = document.getElementById('salesChart').getContext('2d');
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: {{ item_names | tojson }},
+        datasets: [
+            {
+                label: 'Quantity Sold',
+                data: {{ item_sales | tojson }},
+                yAxisID: 'y1'
             },
-            interaction: {
-                mode: 'index',
-                intersect: false
-            },
-            scales: {
-                x: {
-                    ticks: { color: '#ccc' },
-                    grid: { color: 'rgba(255, 255, 255, 0.05)' }
-                },
-                y1: {
-                    beginAtZero: true,
-                    position: 'left',
-                    title: {
-                        display: true,
-                        text: 'Quantity',
-                        color: '#00ffff'
-                    },
-                    ticks: { color: '#ccc' },
-                    grid: { color: 'rgba(255, 255, 255, 0.05)' }
-                },
-                y2: {
-                    beginAtZero: true,
-                    position: 'right',
-                    title: {
-                        display: true,
-                        text: '₱ Revenue',
-                        color: '#ff6384'
-                    },
-                    ticks: { color: '#ccc' },
-                    grid: {
-                        drawOnChartArea: false
-                    }
-                }
+            {
+                label: 'Total Revenue (₱)',
+                data: {{ item_revenues | tojson }},
+                type: 'line',
+                yAxisID: 'y2',
+                tension: 0.3,
+                fill: true
             }
-        }
-    });
+        ]
+    },
+    options: {
+        responsive:true,
+        scales: {
+            x: { ticks:{ color:'#ccc' }, grid:{ color:'rgba(255,255,255,0.05)' } },
+            y1: { beginAtZero:true, position:'left', title:{display:true,text:'Quantity',color:'#00ffff'}, ticks:{color:'#ccc'}, grid:{color:'rgba(255,255,255,0.05)'} },
+            y2: { beginAtZero:true, position:'right', title:{display:true,text:'₱ Revenue',color:'#ff6384'}, ticks:{color:'#ccc'}, grid:{drawOnChartArea:false} }
+        },
+        plugins:{ legend:{ labels:{ color:'#00ffff' } } }
+    }
+});
 </script>
 {% endblock %}
