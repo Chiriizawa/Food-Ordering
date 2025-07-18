@@ -17,15 +17,12 @@
         overflow-x: hidden;
     }
 
-    h1,
-    h2 {
+    h1, h2 {
         color: #0e0e0e;
         text-shadow: 0 0 6px #00ffffaa;
     }
 
-    select,
-    .border,
-    .bg-white {
+    select, .border, .bg-white {
         background-color: #524e4e !important;
         color: #fff4f4 !important;
         border: 1px solid #00ffff80 !important;
@@ -39,7 +36,63 @@
         box-shadow: 0 0 10px #00ffff;
     }
 
-    table {
+    .report-container {
+        background-color: #524e4e;
+        color: #faffff;
+        border-radius: 10px;
+        box-shadow: 0 0 15px rgba(0, 255, 255, 0.1);
+        padding: 20px;
+        margin-top: 20px;
+    }
+
+    .report-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #00ffff22;
+        padding-bottom: 15px;
+        margin-bottom: 20px;
+    }
+
+    .report-title-container {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .report-logo {
+        height: 50px;
+        width: auto;
+    }
+
+    .report-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #00ffff;
+        text-shadow: 0 0 8px #00ffffaa;
+        margin: 0;
+    }
+
+    .report-date-container {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+    }
+
+    .report-subtitle {
+        color: #bbbbbb;
+        font-size: 0.9rem;
+    }
+
+    .report-generated {
+        color: #bbbbbb;
+        font-size: 0.8rem;
+        margin-top: 5px;
+    }
+
+    .report-table {
+        width: 100%;
+        border-collapse: collapse;
         background-color: #524e4e;
         color: #faffff;
         border-radius: 10px;
@@ -47,44 +100,73 @@
         box-shadow: 0 0 15px rgba(0, 255, 255, 0.1);
     }
 
-    thead {
+    .report-table th {
         background-color: #524e4e;
         color: #ffffff;
+        font-weight: bold;
+        text-align: left;
+        padding: 12px 15px;
+        border-bottom: 2px solid #00ffff22;
     }
 
-    tbody tr:nth-child(even) {
+    .report-table td {
+        padding: 10px 15px;
+        border-bottom: 1px solid #00ffff22;
+    }
+
+    .report-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .report-table tr:nth-child(even) {
         background-color: rgba(0, 255, 255, 0.03);
     }
 
-    tbody tr:hover {
+    .report-table tr:hover td {
         background-color: rgba(0, 255, 255, 0.08);
     }
 
-    th,
-    td {
-        padding: 12px;
-        border-bottom: 1px solid #00ffff22;
+    .currency {
+        text-align: right;
+    }
+
+    .total-row {
+        font-weight: bold;
+        background-color: rgba(0, 255, 255, 0.1) !important;
+    }
+
+    .btn-pdf {
+        background-color: #688f87 !important;
+        color: #000 !important;
+        font-weight: bold;
+        box-shadow: 0 0 10px #131414;
+        border: none !important;
+        padding: 10px 20px !important;
+        border-radius: 8px !important;
+    }
+
+    .btn-pdf:hover {
+        background-color: #7c9792 !important;
+    }
+
+    .filters {
+        background-color: #524e4e;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 0 5px rgba(0, 255, 255, 0.2);
+    }
+
+    .filter-label {
+        font-weight: bold;
+        margin-bottom: 5px;
+        display: block;
+        color: #00ffff;
     }
 
     .text-gray-500 {
         color: #bbbbbb !important;
         font-style: italic;
-    }
-
-    .bg-green-600 {
-        background-color: #688f87 !important;
-        color: #000;
-        font-weight: bold;
-        box-shadow: 0 0 10px #131414;
-        border: none;
-    }
-
-    .bg-green-600:hover {
-        background-color: #7c9792 !important;
-    }
-
-    .rounded {
-        border-radius: 0.5rem;
     }
 
     .azurea-hotel {
@@ -97,76 +179,130 @@
 
 {% block content %}
 <div class="p-6">
-    <h1 class="text-2xl font-bold mb-4">Sales</h1>
+    <h1 class="text-2xl font-bold mb-4">Sales Report</h1>
 
     <!-- Filters -->
-    <div class="flex flex-wrap gap-4 mb-4">
-        <select id="filter-year" class="border p-2 rounded">
-            <option value="">All Years</option>
-        </select>
-
-        <select id="filter-month" class="border p-2 rounded">
-            <option value="">All Months</option>
-            <option value="1">January</option>
-            <option value="2">February</option>
-            <option value="3">March</option>
-            <option value="4">April</option>
-            <option value="5">May</option>
-            <option value="6">June</option>
-            <option value="7">July</option>
-            <option value="8">August</option>
-            <option value="9">September</option>
-            <option value="10">October</option>
-            <option value="11">November</option>
-            <option value="12">December</option>
-        </select>
-
-        <select id="filter-category" class="border p-2 rounded">
-            <option value="">All Categories</option>
-        </select>
-
-        <select id="filter-item" class="border p-2 rounded">
-            <option value="">All Items</option>
-        </select>
-
-        <button onclick="downloadPDF()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-            Generate Sales to PDF
+    <div class="filters">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <div>
+                <label class="filter-label">Year</label>
+                <select id="filter-year" class="border w-full p-2 rounded">
+                    <option value="">All Years</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="filter-label">Month</label>
+                <select id="filter-month" class="border w-full p-2 rounded">
+                    <option value="">All Months</option>
+                    {% for i in range(1, 13) %}
+                    <option value="{{ i }}">{{ ["January","February","March","April","May","June","July","August","September","October","November","December"][i-1] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label class="filter-label">Category</label>
+                <select id="filter-category" class="border w-full p-2 rounded">
+                    <option value="">All Categories</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="filter-label">Item</label>
+                <select id="filter-item" class="border w-full p-2 rounded">
+                    <option value="">All Items</option>
+                </select>
+            </div>
+        </div>
+        
+        <button onclick="downloadPDF()" class="btn-pdf">
+            Generate PDF Report
         </button>
     </div>
 
-    <!-- Styled Web Table -->
-    <div id="pdf-content">
-        <table class="min-w-full border divide-y divide-cyan-400">
+    <!-- Report Content -->
+    <div class="report-container" id="pdf-content">
+        <div class="report-header">
+            <div class="report-title-container">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="report-logo">
+                <h2 class="report-title"> Crave On Sales Report</h2>
+            </div>
+            <div class="report-date-container">
+                <div class="report-subtitle" id="report-date-range">{{ current_date }}</div>
+                <div class="report-generated">Generated on: <span id="report-generated-date"></span></div>
+            </div>
+        </div>
+        
+        <table class="report-table">
             <thead>
                 <tr>
-                    <th>Date</th><th>Year</th><th>Month</th><th>Category</th>
-                    <th>Item</th><th>Quantity</th><th>Price</th>
-                    <th>Commission</th><th>Total</th>
+                    <th>Date</th>
+                    <th>Year</th>
+                    <th>Month</th>
+                    <th>Category</th>
+                    <th>Item</th>
+                    <th>Quantity</th>
+                    <th>Price</th>
+                    <th>Commission</th>
+                    <th class="currency">Total</th>
                 </tr>
             </thead>
             <tbody id="sales-body"></tbody>
+            <tfoot>
+                <tr class="total-row">
+                    <td colspan="8">Grand Total</td>
+                    <td class="currency" id="grand-total">₱0.00</td>
+                </tr>
+            </tfoot>
         </table>
     </div>
 
     <!-- Hidden Plain Table for PDF Export -->
     <div id="pdf-plain" style="display: none; color: #000; font-family: Arial, sans-serif;">
-        <div style="text-align: center; margin-bottom: 10px;">
-            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" style="width: 100px;">
-            <h2 style="margin: 10px 0;">Crave On Sales Report</h2>
+        <div class="pdf-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" style="height: 50px; width: auto;">
+                <h1 style="margin: 0;color: black; font-size: 18px; font-weight: bold;"> Crave On Sales Report</h1>
+            </div>
+            <div style="text-align: right;">
+                <p style="font-size: 12px; margin: 0;">Date: <span id="pdf-date-range"></span></p>
+                <p id="pdf-date" style="font-size: 12px; margin: 5px 0 0 0;">Generated on: <span id="pdf-generated-date"></span></p>
+            </div>
         </div>
         <table border="1" cellspacing="0" cellpadding="5" width="100%" style="border-collapse: collapse; font-size: 12px;">
             <thead>
                 <tr>
-                    <th>Date</th><th>Year</th><th>Month</th><th>Category</th>
-                    <th>Item</th><th>Quantity</th><th>Price</th><th>Commission</th><th>Total</th>
+                    <th>Date</th>
+                    <th>Year</th>
+                    <th>Month</th>
+                    <th>Category</th>
+                    <th>Item</th>
+                    <th>Quantity</th>
+                    <th>Price</th>
+                    <th>Commission</th>
+                    <th style="text-align: right;">Total</th>
                 </tr>
             </thead>
             <tbody id="plain-sales-body"></tbody>
+            <tfoot>
+                <tr style="font-weight: bold;">
+                    <td colspan="8">Grand Total</td>
+                    <td style="text-align: right;" id="plain-grand-total">₱0.00</td>
+                </tr>
+            </tfoot>
         </table>
     </div>
 </div>
 
 <script>
+    function updateGeneratedDate() {
+        const now = new Date();
+        const formattedDate = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
+        document.getElementById('report-generated-date').textContent = formattedDate;
+        return formattedDate;
+    }
+
     async function loadSales() {
         const year = document.getElementById('filter-year').value;
         const month = document.getElementById('filter-month').value;
@@ -183,26 +319,39 @@
         const data = await res.json();
 
         const styledBody = document.getElementById('sales-body');
-        const plainBody = document.getElementById('plain-sales-body');
         styledBody.innerHTML = '';
-        plainBody.innerHTML = '';
 
         if (data.sales.length === 0) {
             styledBody.innerHTML = '<tr><td colspan="9" class="p-4 text-center text-gray-500">No sales found.</td></tr>';
-            plainBody.innerHTML = '<tr><td colspan="9">No sales found.</td></tr>';
+            document.getElementById('grand-total').textContent = '₱0.00';
             return;
         }
+
+        // Update date range display
+        const dates = data.sales.map(s => new Date(s.ordered_at));
+        const minDate = new Date(Math.min(...dates)).toLocaleDateString();
+        const maxDate = new Date(Math.max(...dates)).toLocaleDateString();
+        document.getElementById('report-date-range').textContent = 
+            `${minDate === maxDate ? minDate : `${minDate} to ${maxDate}`}`;
+        document.getElementById('pdf-date-range').textContent = 
+            `${minDate === maxDate ? minDate : `${minDate} to ${maxDate}`}`;
+
+        // Update generated date
+        const generatedDate = updateGeneratedDate();
+        document.getElementById('pdf-generated-date').textContent = generatedDate;
 
         populateFilter('filter-category', [...new Set(data.sales.map(s => s.category_name))]);
         populateFilter('filter-item', [...new Set(data.sales.map(s => s.item_name))]);
 
+        let grandTotal = 0;
         data.sales.forEach(sale => {
-            const commissionAmount = parseFloat(sale.commission);
             const isHotelUser = sale.hotel_user === true;
+            const total = parseFloat(sale.total);
+            grandTotal += total;
 
-            // Styled table row (web)
-            const styledRow = document.createElement('tr');
-            styledRow.innerHTML = `
+            const row = document.createElement('tr');
+            if (isHotelUser) row.classList.add('azurea-hotel');
+            row.innerHTML = `
                 <td>${new Date(sale.ordered_at).toLocaleDateString()}</td>
                 <td>${sale.year}</td>
                 <td>${sale.month}</td>
@@ -211,26 +360,73 @@
                 <td>${sale.quantity}</td>
                 <td>₱${parseFloat(sale.price).toFixed(2)}</td>
                 <td class="${isHotelUser ? 'font-bold text-cyan-300' : ''}">
-                    ₱${commissionAmount.toFixed(2)} ${isHotelUser ? '<span class="badge bg-info">Azurea</span>' : ''}
+                    ₱${parseFloat(sale.commission).toFixed(2)} ${isHotelUser ? '<span class="badge bg-info">Azurea</span>' : ''}
                 </td>
-                <td>₱${parseFloat(sale.total).toFixed(2)}</td>
+                <td class="currency">₱${total.toFixed(2)}</td>
             `;
-            styledBody.appendChild(styledRow);
+            styledBody.appendChild(row);
+        });
 
-            // Plain table row (for PDF)
-            const plainRow = document.createElement('tr');
-            plainRow.innerHTML = `
-                <td>${new Date(sale.ordered_at).toLocaleDateString()}</td>
-                <td>${sale.year}</td>
-                <td>${sale.month}</td>
-                <td>${sale.category_name}</td>
-                <td>${sale.item_name}</td>
-                <td>${sale.quantity}</td>
-                <td>₱${parseFloat(sale.price).toFixed(2)}</td>
-                <td>₱${commissionAmount.toFixed(2)}</td>
-                <td>₱${parseFloat(sale.total).toFixed(2)}</td>
-            `;
-            plainBody.appendChild(plainRow);
+        document.getElementById('grand-total').textContent = `₱${grandTotal.toFixed(2)}`;
+    }
+
+    async function downloadPDF() {
+        const year = document.getElementById('filter-year').value;
+        const month = document.getElementById('filter-month').value;
+        const category = document.getElementById('filter-category').value;
+        const item = document.getElementById('filter-item').value;
+
+        const url = new URL(window.location.origin + '/Admin/api/sales');
+        if (year) url.searchParams.append('year', year);
+        if (month) url.searchParams.append('month', month);
+        if (category) url.searchParams.append('category', category);
+        if (item) url.searchParams.append('item', item);
+
+        const res = await fetch(url);
+        const data = await res.json();
+
+        const plainBody = document.getElementById('plain-sales-body');
+        plainBody.innerHTML = '';
+
+        if (data.sales.length === 0) {
+            plainBody.innerHTML = '<tr><td colspan="9">No sales found.</td></tr>';
+            document.getElementById('plain-grand-total').textContent = '₱0.00';
+        } else {
+            let grandTotal = 0;
+            data.sales.forEach(sale => {
+                const total = parseFloat(sale.total);
+                grandTotal += total;
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${new Date(sale.ordered_at).toLocaleDateString()}</td>
+                    <td>${sale.year}</td>
+                    <td>${sale.month}</td>
+                    <td>${sale.category_name}</td>
+                    <td>${sale.item_name}</td>
+                    <td>${sale.quantity}</td>
+                    <td>₱${parseFloat(sale.price).toFixed(2)}</td>
+                    <td>₱${parseFloat(sale.commission).toFixed(2)}</td>
+                    <td style="text-align: right;">₱${total.toFixed(2)}</td>
+                `;
+                plainBody.appendChild(tr);
+            });
+            document.getElementById('plain-grand-total').textContent = `₱${grandTotal.toFixed(2)}`;
+        }
+
+        const pdfSection = document.getElementById('pdf-plain');
+        pdfSection.style.display = 'block';
+
+        const opt = {
+            margin: 0.5,
+            filename: `Sales_Report_${new Date().toISOString().slice(0, 10)}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+            jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+
+        html2pdf().set(opt).from(pdfSection).save().then(() => {
+            pdfSection.style.display = 'none';
         });
     }
 
@@ -260,49 +456,10 @@
         });
     }
 
-    function downloadPDF() {
-        const pdfSection = document.getElementById('pdf-plain');
-        const plainBody = document.getElementById('plain-sales-body');
-        const styledRows = document.querySelectorAll('#sales-body tr');
-
-        plainBody.innerHTML = '';
-        styledRows.forEach(row => {
-            const cells = row.querySelectorAll('td');
-            if (cells.length) {
-                const tr = document.createElement('tr');
-                cells.forEach(cell => {
-                    const td = document.createElement('td');
-                    td.textContent = cell.textContent.replace(/\s*Azurea\s*/g, '').trim();
-                    tr.appendChild(td);
-                });
-                plainBody.appendChild(tr);
-            }
-        });
-
-        pdfSection.style.display = 'block';
-
-        const opt = {
-            margin: 0.5,
-            filename: `Sales_Report_${new Date().toISOString().slice(0, 10)}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: {
-                scale: 2,
-                useCORS: true,
-                allowTaint: true,
-                backgroundColor: '#ffffff'
-            },
-            jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-        };
-
-        html2pdf().set(opt).from(pdfSection).save().then(() => {
-            pdfSection.style.display = 'none';
-        });
-    }
-
     document.addEventListener('DOMContentLoaded', () => {
         loadYears();
+        updateGeneratedDate();
         loadSales();
-
         ['filter-year', 'filter-month', 'filter-category', 'filter-item'].forEach(id => {
             document.getElementById(id).addEventListener('change', loadSales);
         });

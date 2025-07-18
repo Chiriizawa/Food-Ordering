@@ -6,6 +6,7 @@ from werkzeug.utils import secure_filename
 import datetime
 from collections import defaultdict
 from decimal import Decimal
+import re
 
 admin = Blueprint('admin', __name__, template_folder="template")
 bcrypt = Bcrypt()
@@ -332,7 +333,7 @@ def edit_category():
     if not category_id:
         session['error_categories'] = "Category ID is missing."
         return redirect(url_for('admin.category'))
-
+    
     if not new_name:
         session['error_categories'] = "Category name cannot be empty."
         return redirect(url_for('admin.categories'))
@@ -340,6 +341,12 @@ def edit_category():
     if len(new_name) < 3 or len(new_name) > 50:
         session['error_categories'] = "Category name must be between 3 and 50 characters."
         return redirect(url_for('admin.categories'))
+
+    if not re.match(r'^[A-Za-z ]+$', new_name):
+        session['error_categories'] = "Category name must only contain letters and spaces (no numbers or symbols)."
+        return redirect(url_for('admin.categories'))
+
+
 
     try:
         connection = connect_db()
@@ -651,8 +658,8 @@ def api_edit_item(item_id):
     if len(name) < 2 or len(name) > 100:
         return jsonify({'success': False, 'message': 'Item name must be between 2 and 100 characters'}), 400
 
-    if any(char.isdigit() for char in name):
-        return jsonify({'success': False, 'message': 'Item name must not contain numbers'}), 400
+    if not re.match(r'^[A-Za-z ]+$', name):
+        return jsonify({'success': False, 'message': 'Item name must only contain letters and spaces (no numbers or symbols)'}), 400
 
 
     if not category_id.isdigit():
